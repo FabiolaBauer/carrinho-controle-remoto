@@ -1,0 +1,55 @@
+Command: ninja all
+[1/9] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/main.c.obj
+[2/9] Linking C static library esp-idf\main\libmain.a
+[3/9] Performing build step for 'bootloader'
+[0/1] Re-running CMake...
+-- Minimal build - OFF
+-- Building ESP-IDF components for target esp32
+-- KCONFIG_REPORT_VERBOSITY not set, using default
+-- Project sdkconfig file C:/Unisinos/embarcados/trabalhoGB/carrinho/sdkconfig
+NOTE: Kconfig parser version: 1
+NOTE: Kconfig defaults policy: use sdkconfig
+NOTE: Status: Finished successfully
+-- Compiler supported targets: xtensa-esp-elf
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Adding linker script C:/esp/v6.1/esp-idf/components/soc/esp32/ld/esp32.peripherals.ld
+-- Adding linker script C:/esp/v6.1/esp-idf/components/esp_hal_regi2c/esp32/rom.regi2c.ld
+-- Bootloader project name: "bootloader" version: 1
+-- Adding linker script C:/esp/v6.1/esp-idf/components/esp_rom/esp32/ld/esp32.rom.ld
+-- Adding linker script C:/esp/v6.1/esp-idf/components/esp_rom/esp32/ld/esp32.rom.api.ld
+-- Adding linker script C:/esp/v6.1/esp-idf/components/esp_rom/esp32/ld/esp32.rom.libgcc.ld
+-- Adding linker script C:/esp/v6.1/esp-idf/components/esp_rom/esp32/ld/esp32.rom.libc-funcs.ld
+-- Components: bootloader bootloader_support efuse esp_app_format esp_blockdev esp_bootloader_format esp_common esp_hal_ana_conv esp_hal_clock esp_hal_dma esp_hal_gpio esp_hal_gpspi esp_hal_i2s esp_hal_mspi esp_hal_pmu esp_hal_regi2c esp_hal_rtc_timer esp_hal_security esp_hal_systimer esp_hal_timg esp_hal_uart esp_hal_usb esp_hal_wdt esp_hw_support esp_libc esp_rom esp_security esp_stdio esp_system esptool_py freertos hal log main micro-ecc partition_table soc spi_flash xtensa
+-- Component paths: C:/esp/v6.1/esp-idf/components/bootloader C:/esp/v6.1/esp-idf/components/bootloader_support C:/esp/v6.1/esp-idf/components/efuse C:/esp/v6.1/esp-idf/components/esp_app_format C:/esp/v6.1/esp-idf/components/esp_blockdev C:/esp/v6.1/esp-idf/components/esp_bootloader_format C:/esp/v6.1/esp-idf/components/esp_common C:/esp/v6.1/esp-idf/components/esp_hal_ana_conv C:/esp/v6.1/esp-idf/components/esp_hal_clock C:/esp/v6.1/esp-idf/components/esp_hal_dma C:/esp/v6.1/esp-idf/components/esp_hal_gpio C:/esp/v6.1/esp-idf/components/esp_hal_gpspi C:/esp/v6.1/esp-idf/components/esp_hal_i2s C:/esp/v6.1/esp-idf/components/esp_hal_mspi C:/esp/v6.1/esp-idf/components/esp_hal_pmu C:/esp/v6.1/esp-idf/components/esp_hal_regi2c C:/esp/v6.1/esp-idf/components/esp_hal_rtc_timer C:/esp/v6.1/esp-idf/components/esp_hal_security C:/esp/v6.1/esp-idf/components/esp_hal_systimer C:/esp/v6.1/esp-idf/components/esp_hal_timg C:/esp/v6.1/esp-idf/components/esp_hal_uart C:/esp/v6.1/esp-idf/components/esp_hal_usb C:/esp/v6.1/esp-idf/components/esp_hal_wdt C:/esp/v6.1/esp-idf/components/esp_hw_support C:/esp/v6.1/esp-idf/components/esp_libc C:/esp/v6.1/esp-idf/components/esp_rom C:/esp/v6.1/esp-idf/components/esp_security C:/esp/v6.1/esp-idf/components/esp_stdio C:/esp/v6.1/esp-idf/components/esp_system C:/esp/v6.1/esp-idf/components/esptool_py C:/esp/v6.1/esp-idf/components/freertos C:/esp/v6.1/esp-idf/components/hal C:/esp/v6.1/esp-idf/components/log C:/esp/v6.1/esp-idf/components/bootloader/subproject/main C:/esp/v6.1/esp-idf/components/bootloader/subproject/components/micro-ecc C:/esp/v6.1/esp-idf/components/partition_table C:/esp/v6.1/esp-idf/components/soc C:/esp/v6.1/esp-idf/components/spi_flash C:/esp/v6.1/esp-idf/components/xtensa
+-- Adding linker script C:/esp/v6.1/esp-idf/components/bootloader/subproject/main/ld/esp32/bootloader.memory.ld.in
+--   -> Preprocessing .in script: C:/esp/v6.1/esp-idf/components/bootloader/subproject/main/ld/esp32/bootloader.memory.ld.in
+-- Adding linker script C:/esp/v6.1/esp-idf/components/bootloader/subproject/main/ld/esp32/bootloader.sections.ld.in
+--   -> Preprocessing .in script: C:/esp/v6.1/esp-idf/components/bootloader/subproject/main/ld/esp32/bootloader.sections.ld.in
+-- Configuring done (15.7s)
+-- Generating done (0.4s)
+-- Build files have been written to: C:/Unisinos/embarcados/trabalhoGB/carrinho/build/bootloader
+[1/2] C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Unisinos\embarcados\trabalhoGB\carrinho\build\bootloader && C:\Espressif\tools\python\v6.1\venv\Scripts\python.exe C:/esp/v6.1/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 C:/Unisinos/embarcados/trabalhoGB/carrinho/build/bootloader/bootloader.bin"
+Bootloader binary size 0x6640 bytes. 0x9c0 bytes (9%) free.
+[4/9] No install step for 'bootloader'
+[5/9] Completed 'bootloader'
+[6/9] Generating esp-idf/esp_system/ld/sections.ld
+NOTE: C:/esp/v6.1/esp-idf/components/bt/host/nimble/Kconfig.in:1428: BT_NIMBLE_MESH_PROVISIONER: 'default 0' is not a valid bool value (only 'y' and 'n' are allowed). Value is treated as 'n'.
+NOTE: C:/esp/v6.1/esp-idf/components/bt/controller/esp32/Kconfig.in:177: BTDM_CTRL_LEGACY_AUTH_VENDOR_EVT_EFF: 'default 0' is not a valid bool value (only 'y' and 'n' are allowed). Value is treated as 'n'.
+NOTE: C:/esp/v6.1/esp-idf/components/fatfs/Kconfig:240: FATFS_PRINT_LLI: 'default 0' is not a valid bool value (only 'y' and 'n' are allowed). Value is treated as 'n'.
+NOTE: C:/esp/v6.1/esp-idf/components/fatfs/Kconfig:245: FATFS_PRINT_FLOAT: 'default 0' is not a valid bool value (only 'y' and 'n' are allowed). Value is treated as 'n'.
+[7/9] Linking CXX executable car.elf
+[8/9] Generating binary image from built executable
+esptool v5.5.0
+Creating ESP32 image...
+Merged 3 ELF sections.
+Successfully created ESP32 image.
+Generated C:/Unisinos/embarcados/trabalhoGB/carrinho/build/car.bin
+[9/9] C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Unisinos\embarcados\trabalhoGB\carrinho\build && C:\Espressif\tools\python\v6.1\venv\Scripts\python.exe C:/esp/v6.1/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app C:/Unisinos/embarcados/trabalhoGB/carrinho/build/partition_table/partition-table.bin C:/Unisinos/embarcados/trabalhoGB/carrinho/build/car.bin"
+car.bin binary size 0x2f880 bytes. Smallest app partition is 0x100000 bytes. 0xd0780 bytes (81%) free.

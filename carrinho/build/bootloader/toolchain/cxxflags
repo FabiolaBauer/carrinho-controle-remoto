@@ -1,0 +1,7 @@
+"-specs=C:/Unisinos/embarcados/trabalhoGB/carrinho/build/bootloader/specs/picolibc.specs"
+-Wno-frame-address
+-mlongcalls
+-fno-builtin-memcpy
+-fno-builtin-memset
+-fno-builtin-bzero
+-fno-rtti

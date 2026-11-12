@@ -1,0 +1,6 @@
+-Wno-frame-address
+-mlongcalls
+-fno-builtin-memcpy
+-fno-builtin-memset
+-fno-builtin-bzero
+"-specs=C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/specs/picolibc.specs"
