@@ -1,0 +1,18 @@
+# sdkconfig.defaults - Configurações padrão para o projeto controller (ESP32 #1)
+# Fase 1: apenas esqueleto — loga MAC e aguarda
+
+# Desabilita Bluetooth para economizar flash/RAM
+CONFIG_BT_ENABLED=n
+
+# Habilita Wi-Fi (necessário para ESP-NOW e leitura de MAC)
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=4
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=8
+
+# Log padrão em INFO
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# Nível de otimização
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+
+# Desabilita advertência de Picolibc para float em log
+CONFIG_NEWLIB_STDOUT_LINE_ENDING_CRLF=n

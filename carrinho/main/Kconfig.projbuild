@@ -1,0 +1,5 @@
+menu "Carrinho"
+    config CAR_BENCH_MODE
+        bool "Modo de bancada (sem controle, comandos simulados)"
+        default n
+endmenu
