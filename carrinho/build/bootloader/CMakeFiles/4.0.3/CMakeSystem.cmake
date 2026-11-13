@@ -3,7 +3,7 @@ set(CMAKE_HOST_SYSTEM_NAME "Windows")
 set(CMAKE_HOST_SYSTEM_VERSION "10.0.26300")
 set(CMAKE_HOST_SYSTEM_PROCESSOR "AMD64")
 
-include("C:/Unisinos/embarcados/trabalhoGB/carrinho/build/bootloader/toolchain/toolchain-esp32.cmake")
+include("C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/carrinho/build/bootloader/toolchain/toolchain-esp32.cmake")
 
 set(CMAKE_SYSTEM "Generic")
 set(CMAKE_SYSTEM_NAME "Generic")

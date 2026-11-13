@@ -1,4 +1,4 @@
-/* * Data converted from C:/Unisinos/embarcados/trabalhoGB/carrinho/build/esp-idf/mbedtls/x509_crt_bundle
+/* * Data converted from C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/carrinho/build/esp-idf/mbedtls/x509_crt_bundle
  */
 .data
 #if !defined (__APPLE__) && !defined (__linux__)

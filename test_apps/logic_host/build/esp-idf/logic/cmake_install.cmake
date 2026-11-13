@@ -1,4 +1,4 @@
-# Install script for directory: C:/Unisinos/embarcados/trabalhoGB/components/logic
+# Install script for directory: C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/components/logic
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,6 +40,6 @@ endif()
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/esp-idf/logic/install_local_manifest.txt"
+  file(WRITE "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/esp-idf/logic/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

@@ -18,8 +18,8 @@ end
 
 # Load bootloader symbols
 set confirm off
-    add-symbol-file C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader/bootloader.elf
+    add-symbol-file C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader/bootloader.elf
 set confirm on
 
 # Load application symbols
-file C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/logic_host.elf
+file C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/logic_host.elf

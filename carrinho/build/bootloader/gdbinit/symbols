@@ -22,4 +22,4 @@ set confirm off
 set confirm on
 
 # Load application symbols
-file C:/Unisinos/embarcados/trabalhoGB/carrinho/build/bootloader/bootloader.elf
+file C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/carrinho/build/bootloader/bootloader.elf

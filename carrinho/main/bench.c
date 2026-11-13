@@ -10,6 +10,8 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/task.h"
+#include <string.h>
+#include <inttypes.h>
 
 static const char *TAG = "bench";
 
@@ -51,7 +53,7 @@ static void bench_task(void *pvParameters)
         for (size_t s = 0; s < BENCH_STEP_COUNT; s++) {
             const bench_step_def_t *step = &s_bench_steps[s];
             uint32_t now_ms = (uint32_t)(esp_timer_get_time() / 1000);
-            ESP_LOGI(TAG, "[%lu ms] EVT bench_step %d (%s)", (unsigned long)now_ms, step->step_id, step->desc);
+            ESP_LOGI(TAG, "[%" PRIu32 " ms] EVT bench_step %d (%s)", now_ms, step->step_id, step->desc);
 
             uint32_t elapsed = 0;
             while (elapsed < step->duration_ms) {
@@ -63,9 +65,16 @@ static void bench_task(void *pvParameters)
                 pkt.y = step->y;
                 pkt.crc = crc8_calc((const uint8_t *)&pkt, sizeof(cmd_packet_t) - 1);
 
+                /* Empacota como rx_packet_t para a mesma fila do ESP-NOW */
+                rx_packet_t rx_pkt;
+                memset(&rx_pkt, 0, sizeof(rx_pkt));
+                memcpy(rx_pkt.data, &pkt, sizeof(pkt));
+                rx_pkt.len = sizeof(pkt);
+                rx_pkt.rx_ms = (uint32_t)(esp_timer_get_time() / 1000);
+
                 /* Injeta o pacote na mesma fila do laço de controle */
                 if (s_bench_cmd_queue != NULL) {
-                    xQueueSend(s_bench_cmd_queue, &pkt, 0);
+                    xQueueSend(s_bench_cmd_queue, &rx_pkt, 0);
                 }
 
                 vTaskDelay(pdMS_TO_TICKS(CMD_PERIOD_MS)); // 20 Hz

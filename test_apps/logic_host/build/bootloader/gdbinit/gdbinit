@@ -1,2 +1,2 @@
-source C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader/gdbinit/symbols
-source C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader/gdbinit/connect
+source C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader/gdbinit/symbols
+source C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader/gdbinit/connect

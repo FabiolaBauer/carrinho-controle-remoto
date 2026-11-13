@@ -10,18 +10,18 @@ if(NOT EXISTS "C:/esp/v6.1/esp-idf/components/bootloader/subproject")
   file(MAKE_DIRECTORY "C:/esp/v6.1/esp-idf/components/bootloader/subproject")
 endif()
 file(MAKE_DIRECTORY
-  "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader"
-  "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader-prefix"
-  "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader-prefix/tmp"
-  "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader-prefix/src/bootloader-stamp"
-  "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader-prefix/src"
-  "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader-prefix/src/bootloader-stamp"
+  "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader"
+  "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader-prefix"
+  "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader-prefix/tmp"
+  "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader-prefix/src/bootloader-stamp"
+  "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader-prefix/src"
+  "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader-prefix/src/bootloader-stamp"
 )
 
 set(configSubDirs )
 foreach(subDir IN LISTS configSubDirs)
-    file(MAKE_DIRECTORY "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader-prefix/src/bootloader-stamp/${subDir}")
+    file(MAKE_DIRECTORY "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader-prefix/src/bootloader-stamp/${subDir}")
 endforeach()
 if(cfgdir)
-  file(MAKE_DIRECTORY "C:/Unisinos/embarcados/trabalhoGB/test_apps/logic_host/build/bootloader-prefix/src/bootloader-stamp${cfgdir}") # cfgdir has leading slash
+  file(MAKE_DIRECTORY "C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/test_apps/logic_host/build/bootloader-prefix/src/bootloader-stamp${cfgdir}") # cfgdir has leading slash
 endif()

@@ -1,2 +1,2 @@
-source C:/Unisinos/embarcados/trabalhoGB/carrinho/build/bootloader/gdbinit/symbols
-source C:/Unisinos/embarcados/trabalhoGB/carrinho/build/bootloader/gdbinit/connect
+source C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/carrinho/build/bootloader/gdbinit/symbols
+source C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/carrinho/build/bootloader/gdbinit/connect
