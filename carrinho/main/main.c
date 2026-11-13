@@ -41,13 +41,6 @@
 
 static const char *TAG = "car_main";
 
-/* Estrutura para fila de pacotes recebidos do ESP-NOW */
-typedef struct {
-    uint8_t src_mac[6];
-    uint8_t data[sizeof(cmd_packet_t)];
-    size_t  len;
-    uint32_t rx_ms;
-} rx_packet_t;
 
 /* Estrutura para fila de eventos de log assíncrono (Seção 8.6) */
 typedef enum {
