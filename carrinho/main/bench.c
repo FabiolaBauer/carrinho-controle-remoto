@@ -13,9 +13,10 @@
 #include <string.h>
 #include <inttypes.h>
 
-static const char *TAG = "bench";
-
+/* Todo o conteúdo só existe no build de bancada (Seção 15.4) */
 #if CONFIG_CAR_BENCH_MODE
+
+static const char *TAG = "bench";
 
 typedef struct {
     uint8_t  step_id;
@@ -26,15 +27,16 @@ typedef struct {
 } bench_step_def_t;
 
 static const bench_step_def_t s_bench_steps[] = {
-    { 1, 2000,   0,   0, "1. Zero (arma) - 2s" },
-    { 2, 3000,   0,  40, "2. Frente suave - 3s" },
-    { 3, 2000,   0,   0, "3. Zero - 2s" },
-    { 4, 3000,   0, -40, "4. Ré suave - 3s" },
-    { 5, 2000,   0,   0, "5. Zero - 2s" },
-    { 6, 3000,  40,  60, "6. Curva à direita - 3s" },
-    { 7, 2000,   0,   0, "7. Zero - 2s" },
-    { 8, 3000,  60,   0, "8. Giro no lugar - 3s" },
-    { 9, 2000,   0,   0, "9. Zero - 2s" }
+    /* Tabela da Seção 15.4: x e y são os valores do próprio ensaio */
+    { 1, BENCH_ZERO_MS,   0,   0, "1. Zero (arma)" },
+    { 2, BENCH_MOVE_MS,   0,  40, "2. Frente suave" },
+    { 3, BENCH_ZERO_MS,   0,   0, "3. Zero" },
+    { 4, BENCH_MOVE_MS,   0, -40, "4. Re suave" },
+    { 5, BENCH_ZERO_MS,   0,   0, "5. Zero" },
+    { 6, BENCH_MOVE_MS,  40,  60, "6. Curva a direita" },
+    { 7, BENCH_ZERO_MS,   0,   0, "7. Zero" },
+    { 8, BENCH_MOVE_MS,  60,   0, "8. Giro no lugar" },
+    { 9, BENCH_ZERO_MS,   0,   0, "9. Zero" }
 };
 
 #define BENCH_STEP_COUNT (sizeof(s_bench_steps) / sizeof(s_bench_steps[0]))
@@ -44,10 +46,11 @@ static QueueHandle_t s_bench_cmd_queue = NULL;
 static void bench_task(void *pvParameters)
 {
     (void)pvParameters;
-    ESP_LOGI(TAG, "Aguardando 3s antes de iniciar a sequência de bancada...");
-    vTaskDelay(pdMS_TO_TICKS(3000));
+    ESP_LOGI(TAG, "Aguardando %d ms antes de iniciar a sequência de bancada...", BENCH_START_DELAY_MS);
+    vTaskDelay(pdMS_TO_TICKS(BENCH_START_DELAY_MS));
 
     uint16_t seq = 1;
+    TickType_t last_wake = xTaskGetTickCount();
 
     while (1) {
         for (size_t s = 0; s < BENCH_STEP_COUNT; s++) {
@@ -74,10 +77,10 @@ static void bench_task(void *pvParameters)
 
                 /* Injeta o pacote na mesma fila do laço de controle */
                 if (s_bench_cmd_queue != NULL) {
-                    xQueueSend(s_bench_cmd_queue, &rx_pkt, 0);
+                    xQueueSend(s_bench_cmd_queue, &rx_pkt, 0);   /* não bloqueia; fila cheia = pacote perdido */
                 }
 
-                vTaskDelay(pdMS_TO_TICKS(CMD_PERIOD_MS)); // 20 Hz
+                xTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CMD_PERIOD_MS)); // 20 Hz, como o controle
                 elapsed += CMD_PERIOD_MS;
             }
         }
@@ -87,7 +90,7 @@ static void bench_task(void *pvParameters)
 esp_err_t bench_mode_start(QueueHandle_t cmd_queue)
 {
     s_bench_cmd_queue = cmd_queue;
-    BaseType_t res = xTaskCreate(bench_task, "bench_task", 3072, NULL, 4, NULL);
+    BaseType_t res = xTaskCreate(bench_task, "bench_task", CAR_TASK_STACK, NULL, CAR_BENCH_TASK_PRIO, NULL);
     if (res != pdPASS) {
         ESP_LOGE(TAG, "Falha ao criar bench_task");
         return ESP_FAIL;

@@ -36,7 +36,7 @@ void motors_set(int8_t left_pct, int8_t right_pct);
 /**
  * @brief Aciona freio elétrico ativo imediato em ambos os motores (Seção 8.4)
  *
- * Configura IN1=IN2=HIGH e IN3=IN4=HIGH com EN em duty 255.
+ * Configura IN1=IN2=HIGH e IN3=IN4=HIGH com EN em duty PWM_DUTY_MAX.
  */
 void motors_brake(void);
 
