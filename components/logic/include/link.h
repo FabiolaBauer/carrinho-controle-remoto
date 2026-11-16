@@ -61,7 +61,7 @@ void link_init(link_rx_t *rx, const uint8_t *expected_mac, uint32_t now_ms);
 link_verdict_t link_check_cmd(link_rx_t *rx, const uint8_t *src_mac, const uint8_t *data, size_t len, uint32_t now_ms, cmd_packet_t *out_cmd);
 
 /**
- * @brief Verifica se o sinal de vida do enlace está ativo (now - last_rx <= 300 ms)
+ * @brief Verifica se o sinal de vida do enlace está ativo (now - last_rx < LINK_TIMEOUT_MS)
  *
  * @param rx Ponteiro para estrutura do receptor
  * @param now_ms Timestamp atual em ms

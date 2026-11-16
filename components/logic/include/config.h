@@ -42,14 +42,45 @@
 #define SENSOR_VALID_MAX_CM     400     /**< Leitura máxima válida do HC-SR04 */
 #define SENSOR_FAIL_CYCLES      3       /**< Ciclos sem eco/inválidos para declarar sensor com defeito */
 #define SENSOR_RECOVER_CYCLES   3       /**< Ciclos válidos para recuperar sensor */
+#define OBSTACLE_EXIT_CYCLES    3       /**< Leituras válidas seguidas > OBSTACLE_EXIT_CM para sair do obstáculo */
+#define HCSR04_TRIG_PULSE_US    10      /**< Largura do pulso de TRIG do HC-SR04 (µs) */
+#define HCSR04_US_PER_CM        58      /**< Conversão largura do eco (µs) -> distância (cm) */
 
 #define PWM_FREQ_HZ             5000    /**< Frequência PWM dos motores */
+#define PWM_DUTY_MAX            255     /**< Duty máximo com LEDC_TIMER_8_BIT (2^8 - 1) */
 #define PWM_MIN_PCT             30      /**< PWM mínimo mapeado para vencer atrito estático [CONFIRMAR] */
 #define MAX_PWM_PCT             100     /**< PWM máximo permitido */
 #define RAMP_UP_PCT_PER_S       200     /**< Rampa de aceleração: 200%/s (0 -> 100% em 0,5 s) */
 #define REVERSE_DWELL_MS        50      /**< Tempo de pausa em 0 ao inverter sentido dos motores */
 
+#define BATT_PERIOD_MS          200     /**< Período de leitura da bateria (Seção 8.1) */
+#define BATT_SAMPLES            8       /**< Amostras por leitura da bateria (média) */
 #define BATT_DIV_RATIO_X1000    3000    /**< Fator do divisor de tensão x1000 (inteiro: 3,000) [CONFIRMAR] */
+#define ADC_RAW_MAX             4095    /**< Leitura máxima do ADC de 12 bits (ADC_BITWIDTH_DEFAULT no ESP32) */
+#define ADC_APPROX_FULL_MV      3300    /**< Fundo de escala aproximado sem calibração (mV) */
+
+/* Divisões do laço de controle (contadores de ticks, Seção 8.1) */
+#define TELEM_EVERY_TICKS       (TELEM_PERIOD_MS / CONTROL_PERIOD_MS)  /**< 200/10 = 20 ticks */
+#define BATT_EVERY_TICKS        (BATT_PERIOD_MS / CONTROL_PERIOD_MS)   /**< 200/10 = 20 ticks */
+_Static_assert((TELEM_PERIOD_MS % CONTROL_PERIOD_MS) == 0, "TELEM_PERIOD_MS deve ser multiplo de CONTROL_PERIOD_MS");
+_Static_assert((BATT_PERIOD_MS % CONTROL_PERIOD_MS) == 0, "BATT_PERIOD_MS deve ser multiplo de CONTROL_PERIOD_MS");
+
+/* Filas e tarefas do carrinho */
+#define CAR_RX_QUEUE_LEN        8       /**< Profundidade da fila de pacotes recebidos (Seção 8.2) */
+#define CAR_LOG_QUEUE_LEN       16      /**< Profundidade da fila de eventos de log (Seção 8.6) */
+#define CAR_TASK_STACK          3072    /**< Pilha das tarefas auxiliares (log, sensor, bancada), em bytes */
+#define CAR_LOG_TASK_PRIO       3       /**< Prioridade da tarefa de log (baixa) */
+#define CAR_BENCH_TASK_PRIO     4       /**< Prioridade da tarefa de simulação da bancada */
+#define CAR_SONAR_TASK_PRIO     5       /**< Prioridade da tarefa do HC-SR04 */
+
+/* DEBUG_PIN (Seção 8.6): muda de nível uma vez quando os motores chegam a zero */
+#define DEBUG_PIN_LEVEL_MOVING  0       /**< Nível de repouso: motores girando */
+#define DEBUG_PIN_LEVEL_STOPPED 1       /**< Nível ao chegar a zero (mesma borda do EVT motors_zero) */
+
+/* Modo de bancada (Seção 15.4) */
+#define BENCH_START_DELAY_MS    3000    /**< Espera antes de iniciar a sequência */
+#define BENCH_ZERO_MS           2000    /**< Duração dos passos de zero */
+#define BENCH_MOVE_MS           3000    /**< Duração dos passos de movimento */
 
 /* =========================================================================
  * Pinagem do Carrinho (ESP32 #2) [CONFIRMAR]
