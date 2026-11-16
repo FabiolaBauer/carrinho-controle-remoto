@@ -18,6 +18,8 @@
 #include "ramp.h"
 #include "link.h"
 #include "state_machine.h"
+#include "telem.h"
+#include "led_pattern.h"
 
 void setUp(void)
 {
@@ -868,6 +870,108 @@ void test_sm_sensor_invalid_blocks_forward(void)
     TEST_ASSERT_FALSE(out.sensor_valid);
 }
 
+/* =========================================================================
+ * 8. Controle: validação de telemetria e LED (Seção 7)
+ * ========================================================================= */
+static telem_packet_t make_telem(uint8_t state)
+{
+    telem_packet_t t;
+    t.magic = PROTO_MAGIC;
+    t.type = PKT_TELEM;
+    t.seq = 7;
+    t.state = state;
+    t.reserved = 0;
+    t.distance_cm = 42;
+    t.battery_mv = 7430;
+    t.rejected_cnt = 3;
+    t.crc = crc8_calc((const uint8_t *)&t, sizeof(t) - 1);
+    return t;
+}
+
+void test_telem_check(void)
+{
+    const uint8_t car[6]   = { 9, 8, 7, 6, 5, 4 };
+    const uint8_t other[6] = { 9, 8, 7, 6, 5, 3 };
+    telem_packet_t t = make_telem(ST_OPERANDO), out;
+
+    TEST_ASSERT_EQUAL(TELEM_OK, telem_check(car, car, (const uint8_t *)&t, sizeof(t), &out));
+    TEST_ASSERT_EQUAL_UINT8(ST_OPERANDO, out.state);
+    TEST_ASSERT_EQUAL_UINT16(42, out.distance_cm);
+    TEST_ASSERT_EQUAL_UINT16(7430, out.battery_mv);
+    TEST_ASSERT_EQUAL_UINT16(3, out.rejected_cnt);
+
+    TEST_ASSERT_EQUAL(TELEM_ERR_SRC_MAC, telem_check(car, other, (const uint8_t *)&t, sizeof(t), &out));
+    TEST_ASSERT_EQUAL(TELEM_ERR_SIZE, telem_check(car, car, (const uint8_t *)&t, sizeof(t) - 1, &out));
+
+    // Um comando (PKT_CMD) não é telemetria
+    cmd_packet_t c = make_cmd(1, 0, 0);
+    TEST_ASSERT_EQUAL(TELEM_ERR_SIZE, telem_check(car, car, (const uint8_t *)&c, sizeof(c), &out));
+
+    telem_packet_t bad = t;
+    bad.magic = 0x5A;
+    bad.crc = crc8_calc((const uint8_t *)&bad, sizeof(bad) - 1);
+    TEST_ASSERT_EQUAL(TELEM_ERR_MAGIC, telem_check(car, car, (const uint8_t *)&bad, sizeof(bad), &out));
+
+    bad = t;
+    bad.type = PKT_CMD;
+    bad.crc = crc8_calc((const uint8_t *)&bad, sizeof(bad) - 1);
+    TEST_ASSERT_EQUAL(TELEM_ERR_TYPE, telem_check(car, car, (const uint8_t *)&bad, sizeof(bad), &out));
+
+    bad = t;
+    ((uint8_t *)&bad)[6] ^= 0x01;   // 1 bit trocado em distance_cm
+    TEST_ASSERT_EQUAL(TELEM_ERR_CRC, telem_check(car, car, (const uint8_t *)&bad, sizeof(bad), &out));
+
+    bad = make_telem(ST_FALHA_COM + 1);
+    TEST_ASSERT_EQUAL(TELEM_ERR_STATE, telem_check(car, car, (const uint8_t *)&bad, sizeof(bad), &out));
+
+    TEST_ASSERT_EQUAL_STRING("OPERANDO", telem_state_name(ST_OPERANDO));
+    TEST_ASSERT_EQUAL_STRING("FALHA_COM", telem_state_name(ST_FALHA_COM));
+}
+
+/* Conta as bordas de subida do LED em 1 s, amostrando a cada 1 ms */
+static int led_rising_edges(bool has_telem, uint8_t state, uint32_t start_ms)
+{
+    int edges = 0;
+    bool prev = led_pattern_level(has_telem, state, start_ms);
+    for (uint32_t t = start_ms + 1; t <= start_ms + 1000; t++) {
+        bool cur = led_pattern_level(has_telem, state, t);
+        if (cur && !prev) {
+            edges++;
+        }
+        prev = cur;
+    }
+    return edges;
+}
+
+void test_led_pattern(void)
+{
+    // Sem telemetria: sempre apagado
+    for (uint32_t t = 0; t < 2000; t += 7) {
+        TEST_ASSERT_FALSE(led_pattern_level(false, ST_PARADO, t));
+        TEST_ASSERT_FALSE(led_pattern_level(false, ST_OPERANDO, t));
+    }
+    // PARADO: aceso fixo
+    for (uint32_t t = 0; t < 2000; t += 7) {
+        TEST_ASSERT_TRUE(led_pattern_level(true, ST_PARADO, t));
+    }
+    // OPERANDO: 1 Hz (1 subida por segundo); OBSTACULO: 4 Hz; FALHA_COM: 2 piscadas por segundo
+    TEST_ASSERT_EQUAL_INT(1, led_rising_edges(true, ST_OPERANDO, 0));
+    TEST_ASSERT_EQUAL_INT(4, led_rising_edges(true, ST_OBSTACULO, 0));
+    TEST_ASSERT_EQUAL_INT(2, led_rising_edges(true, ST_FALHA_COM, 0));
+    TEST_ASSERT_EQUAL_INT(0, led_rising_edges(true, ST_PARADO, 0));
+
+    // OPERANDO: metade do período aceso
+    TEST_ASSERT_TRUE(led_pattern_level(true, ST_OPERANDO, 0));
+    TEST_ASSERT_TRUE(led_pattern_level(true, ST_OPERANDO, 499));
+    TEST_ASSERT_FALSE(led_pattern_level(true, ST_OPERANDO, 500));
+
+    // FALHA_COM: aceso 0-99, apagado 100-199, aceso 200-299, apagado até 999
+    TEST_ASSERT_TRUE(led_pattern_level(true, ST_FALHA_COM, 50));
+    TEST_ASSERT_FALSE(led_pattern_level(true, ST_FALHA_COM, 150));
+    TEST_ASSERT_TRUE(led_pattern_level(true, ST_FALHA_COM, 250));
+    TEST_ASSERT_FALSE(led_pattern_level(true, ST_FALHA_COM, 600));
+}
+
 static void run_all_tests(void)
 {
     RUN_TEST(test_joystick_normalize);
@@ -889,6 +993,8 @@ static void run_all_tests(void)
     RUN_TEST(test_sm_obstacle_turn_allowed);
     RUN_TEST(test_sm_obstacle_hysteresis_edges);
     RUN_TEST(test_sm_sensor_invalid_blocks_forward);
+    RUN_TEST(test_telem_check);
+    RUN_TEST(test_led_pattern);
 }
 
 #ifdef ESP_PLATFORM
