@@ -1,7 +1,0 @@
--Wno-frame-address
--mlongcalls
--fno-builtin-memcpy
--fno-builtin-memset
--fno-builtin-bzero
-"-specs=C:/Users/Nathan/Documents/trabalhocarrinho/carrinho-controle-remoto/carrinho/build/specs/picolibc.specs"
--fno-rtti

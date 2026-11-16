@@ -1,0 +1,10 @@
+# Saídas de build do ESP-IDF (geradas por idf.py build)
+build/
+build_*/
+
+# sdkconfig é gerado a partir de sdkconfig.defaults; versionar só os defaults
+sdkconfig
+sdkconfig.old
+
+# Binários do teste no PC
+test_apps/logic_host/host_build/
