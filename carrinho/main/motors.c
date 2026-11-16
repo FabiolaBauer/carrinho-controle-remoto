@@ -4,6 +4,7 @@
  */
 
 #include "motors.h"
+#include "protocol.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -14,28 +15,22 @@ static const char *TAG = "motors";
 #define LEDC_LEFT_CHANNEL    LEDC_CHANNEL_0
 #define LEDC_RIGHT_CHANNEL   LEDC_CHANNEL_1
 
-static int s_debug_pin_state = 0;
-
 static uint32_t pct_to_duty(uint8_t abs_pct)
 {
     if (abs_pct == 0) {
         return 0;
     }
-    if (abs_pct > MAX_PWM_PCT) {
-        abs_pct = MAX_PWM_PCT;
+    if (abs_pct > PROTO_AXIS_MAX) {
+        abs_pct = PROTO_AXIS_MAX;
     }
 
-    /* Mapeia 1..100% para PWM_MIN_PCT..MAX_PWM_PCT */
-    uint32_t scaled_pct = PWM_MIN_PCT;
-    if (abs_pct > 1) {
-        scaled_pct += ((uint32_t)(abs_pct - 1) * (MAX_PWM_PCT - PWM_MIN_PCT)) / 99;
-    }
-    if (scaled_pct > 100) {
-        scaled_pct = 100;
-    }
+    /* Seção 8.4: módulo 1..100% vira PWM_MIN_PCT..MAX_PWM_PCT; 0 continua 0.
+     * O limite MAX_PWM_PCT é aplicado na saída, para que 100% do joystick
+     * corresponda exatamente a MAX_PWM_PCT. */
+    uint32_t scaled_pct = PWM_MIN_PCT +
+        ((uint32_t)(abs_pct - 1) * (MAX_PWM_PCT - PWM_MIN_PCT)) / (PROTO_AXIS_MAX - 1);
 
-    /* Duty de 8 bits: 0..255 */
-    return (scaled_pct * 255) / 100;
+    return (scaled_pct * PWM_DUTY_MAX) / PROTO_AXIS_MAX;
 }
 
 esp_err_t motors_init(void)
@@ -47,8 +42,7 @@ esp_err_t motors_init(void)
         .pin_bit_mask = (1ULL << CAR_PIN_MOTOR_LEFT_IN1) |
                         (1ULL << CAR_PIN_MOTOR_LEFT_IN2) |
                         (1ULL << CAR_PIN_MOTOR_RIGHT_IN3) |
-                        (1ULL << CAR_PIN_MOTOR_RIGHT_IN4) |
-                        (1ULL << CAR_PIN_DEBUG),
+                        (1ULL << CAR_PIN_MOTOR_RIGHT_IN4),
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_ENABLE,
@@ -61,9 +55,10 @@ esp_err_t motors_init(void)
     gpio_set_level(CAR_PIN_MOTOR_LEFT_IN2, 0);
     gpio_set_level(CAR_PIN_MOTOR_RIGHT_IN3, 0);
     gpio_set_level(CAR_PIN_MOTOR_RIGHT_IN4, 0);
-    gpio_set_level(CAR_PIN_DEBUG, 0);
 
-    /* 2. Configuração do LEDC Timer */
+    /* 2. Configuração do LEDC Timer.
+     * LEDC_AUTO_CLK existe no v6.1 para o esp32 (soc/esp32/include/soc/clk_tree_defs.h).
+     * O campo intr_type de ledc_channel_config_t está deprecated no v6.1 e não é usado. */
     ledc_timer_config_t timer_conf = {
         .speed_mode = LEDC_SPEED_MODE,
         .duty_resolution = LEDC_TIMER_8_BIT,
@@ -79,7 +74,6 @@ esp_err_t motors_init(void)
         .gpio_num = CAR_PIN_MOTOR_LEFT_PWM,
         .speed_mode = LEDC_SPEED_MODE,
         .channel = LEDC_LEFT_CHANNEL,
-        .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
         .duty = 0,
         .hpoint = 0,
@@ -93,7 +87,6 @@ esp_err_t motors_init(void)
         .gpio_num = CAR_PIN_MOTOR_RIGHT_PWM,
         .speed_mode = LEDC_SPEED_MODE,
         .channel = LEDC_RIGHT_CHANNEL,
-        .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
         .duty = 0,
         .hpoint = 0,
@@ -159,29 +152,19 @@ void motors_set(int8_t left_pct, int8_t right_pct)
         ledc_set_duty(LEDC_SPEED_MODE, LEDC_RIGHT_CHANNEL, 0);
         ledc_update_duty(LEDC_SPEED_MODE, LEDC_RIGHT_CHANNEL);
     }
-
-    /* Se ambos chegarem a zero, alterna DEBUG_PIN (Seção 8.6) para medição */
-    if (left_pct == 0 && right_pct == 0) {
-        s_debug_pin_state = !s_debug_pin_state;
-        gpio_set_level(CAR_PIN_DEBUG, s_debug_pin_state);
-    }
 }
 
 void motors_brake(void)
 {
-    /* Seção 8.4: IN1 = IN2 = HIGH com EN em duty 255 */
+    /* Seção 8.4: IN1 = IN2 = HIGH com EN em duty máximo (PWM_DUTY_MAX) */
     gpio_set_level(CAR_PIN_MOTOR_LEFT_IN1, 1);
     gpio_set_level(CAR_PIN_MOTOR_LEFT_IN2, 1);
     gpio_set_level(CAR_PIN_MOTOR_RIGHT_IN3, 1);
     gpio_set_level(CAR_PIN_MOTOR_RIGHT_IN4, 1);
 
-    ledc_set_duty(LEDC_SPEED_MODE, LEDC_LEFT_CHANNEL, 255);
+    ledc_set_duty(LEDC_SPEED_MODE, LEDC_LEFT_CHANNEL, PWM_DUTY_MAX);
     ledc_update_duty(LEDC_SPEED_MODE, LEDC_LEFT_CHANNEL);
 
-    ledc_set_duty(LEDC_SPEED_MODE, LEDC_RIGHT_CHANNEL, 255);
+    ledc_set_duty(LEDC_SPEED_MODE, LEDC_RIGHT_CHANNEL, PWM_DUTY_MAX);
     ledc_update_duty(LEDC_SPEED_MODE, LEDC_RIGHT_CHANNEL);
-
-    /* Alterna DEBUG_PIN indicando parada dos motores */
-    s_debug_pin_state = !s_debug_pin_state;
-    gpio_set_level(CAR_PIN_DEBUG, s_debug_pin_state);
 }
