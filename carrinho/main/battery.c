@@ -66,7 +66,7 @@ uint16_t battery_read_mv(void)
     int raw_accum = 0;
     int samples = 0;
 
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < BATT_SAMPLES; i++) {
         int raw = 0;
         esp_err_t err = adc_oneshot_read(s_adc_handle, s_batt_channel, &raw);
         if (err == ESP_OK) {
@@ -85,8 +85,8 @@ uint16_t battery_read_mv(void)
     if (s_calibrated && s_cali_handle != NULL) {
         adc_cali_raw_to_voltage(s_cali_handle, raw_avg, &mv);
     } else {
-        /* Aproximação 0..4095 para 0..3300 mV */
-        mv = (raw_avg * 3300) / 4095;
+        /* Sem calibração: aproximação linear 0..ADC_RAW_MAX -> 0..ADC_APPROX_FULL_MV */
+        mv = (raw_avg * ADC_APPROX_FULL_MV) / ADC_RAW_MAX;
     }
 
     /* Aplica o divisor de tensão: V_bat = V_pin * (BATT_DIV_RATIO_X1000 / 1000) */
