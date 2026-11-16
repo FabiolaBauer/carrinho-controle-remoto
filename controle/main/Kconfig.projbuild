@@ -1,0 +1,8 @@
+menu "Controle"
+    config FW_TEST_T4
+        bool "Teste T4: envia uma vez a sequencia invalida 10 s apos o boot"
+        default n
+        help
+            Build de teste do RF06 (secao 7, item 8). Ligado por
+            sdkconfig.defaults.t4. Fora desse build o codigo do T4 nao existe.
+endmenu
