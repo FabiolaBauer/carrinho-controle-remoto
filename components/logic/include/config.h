@@ -104,4 +104,39 @@ _Static_assert((BATT_PERIOD_MS % CONTROL_PERIOD_MS) == 0, "BATT_PERIOD_MS deve s
 #define CTRL_PIN_JOYSTICK_Y     35      /**< ADC1 */
 #define CTRL_PIN_LED            2       /**< LED de estado onboard */
 
+/* =========================================================================
+ * Parâmetros do Controle (Seção 7)
+ * ========================================================================= */
+/* Joystick / ADC */
+#define CTRL_ADC_AVG_SAMPLES    4       /**< Média curta por leitura de eixo */
+#define CTRL_ADC_MAX_RETRIES    3       /**< Tentativas extras em ESP_ERR_TIMEOUT por amostra */
+#define CTRL_CAL_SAMPLES        25      /**< Amostras da calibração do centro no boot (~500 ms) */
+#define CTRL_CAL_INTERVAL_MS    20      /**< Intervalo entre amostras da calibração */
+#define CTRL_CENTER_MIN_RAW     1500    /**< Centro esperado: mínimo (12 bits) */
+#define CTRL_CENTER_MAX_RAW     2600    /**< Centro esperado: máximo (12 bits) */
+
+/* Envio e telemetria */
+#define CTRL_MAX_SKIPPED_SENDS  4       /**< Ciclos seguidos sem callback de envio antes de destravar */
+#define CTRL_TELEM_QUEUE_LEN    4       /**< Fila de telemetria recebida */
+#define CTRL_TELEM_LOST_MS      1000    /**< Sem telemetria por mais que isso = "SEM TELEMETRIA" */
+#define CTRL_NO_TELEM_LOG_MS    1000    /**< Período do log "SEM TELEMETRIA" */
+#define CTRL_STATS_LOG_MS       10000   /**< Período do log de estatísticas de envio */
+#define CTRL_UI_PERIOD_MS       10      /**< Período da tarefa de UI (resolução do LED) */
+#define CTRL_UI_TASK_STACK      3072    /**< Pilha da tarefa de UI, em bytes */
+#define CTRL_UI_TASK_PRIO       3       /**< Prioridade da tarefa de UI */
+
+/* Padrões do LED (Seção 7, item 7) */
+#define LED_SLOW_PERIOD_MS      1000    /**< OPERANDO: pisca a 1 Hz */
+#define LED_FAST_PERIOD_MS      250     /**< OBSTACULO: pisca a 4 Hz */
+#define LED_DOUBLE_PERIOD_MS    1000    /**< FALHA_COM: duas piscadas a cada 1 s */
+#define LED_DOUBLE_ON_MS        100     /**< FALHA_COM: duração de cada piscada */
+#define LED_DOUBLE_GAP_MS       100     /**< FALHA_COM: intervalo entre as duas piscadas */
+
+/* Teste T4 (Seção 7, item 8; só com CONFIG_FW_TEST_T4) */
+#define T4_START_DELAY_MS       10000   /**< Início da sequência após o boot */
+#define T4_OLD_SEQ_BACK         10      /**< Pacote "sequência antiga": seq atual menos isso */
+#define T4_BAD_X                120     /**< Pacote fora de faixa */
+#define T4_FWD_MS               3000    /**< Duração da frente máxima */
+#define T4_REV_MS               1000    /**< Duração da ré após a inversão direta */
+
 #endif // CONFIG_H
