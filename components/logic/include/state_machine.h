@@ -25,7 +25,7 @@ typedef struct {
     bool        has_cmd;         /**< Novo comando recebido */
     int8_t      cmd_x;           /**< Valor X do comando (-100..100) */
     int8_t      cmd_y;           /**< Valor Y do comando (-100..100) */
-    bool        link_ok;         /**< Status do enlace (now - last_rx <= 300 ms) */
+    bool        link_ok;         /**< Status do enlace (now - last_rx < LINK_TIMEOUT_MS) */
     uint16_t    distance_cm;     /**< Distância do ultrassom (0xFFFF se sem eco) */
     bool        echo_ok;         /**< Eco válido recebido */
     bool        has_sensor_data; /**< Nova leitura do sensor disponível */

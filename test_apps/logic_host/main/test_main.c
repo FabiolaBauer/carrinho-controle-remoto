@@ -276,11 +276,202 @@ void test_link_validation(void)
     pkt.crc = 0x00; // CRC errado
     TEST_ASSERT_EQUAL(LINK_ERR_CRC, link_check_cmd(&rx, mac_expected, (const uint8_t *)&pkt, sizeof(pkt), 190, &out));
 
-    // Timeout de enlace (RF05): aos 300 ms ainda está vivo; aos 301 ms está perdido
+    // CRC: pacote válido com 1 bit trocado é rejeitado pelo link e não renova o enlace
+    pkt.seq = 5;
+    pkt.x = 0;
+    pkt.y = 30;
+    pkt.crc = crc8_calc((const uint8_t *)&pkt, sizeof(cmd_packet_t) - 1);
+    uint8_t flipped[sizeof(cmd_packet_t)];
+    memcpy(flipped, &pkt, sizeof(pkt));
+    flipped[5] ^= 0x04; // 1 bit em y
+    uint32_t last_rx_before = rx.last_rx_ms;
+    TEST_ASSERT_EQUAL(LINK_ERR_CRC, link_check_cmd(&rx, mac_expected, flipped, sizeof(flipped), 200, &out));
+    TEST_ASSERT_EQUAL_UINT32(last_rx_before, rx.last_rx_ms);
+
+    // Tamanho errado rejeitado
+    TEST_ASSERT_EQUAL(LINK_ERR_SIZE, link_check_cmd(&rx, mac_expected, (const uint8_t *)&pkt, sizeof(pkt) - 1, 210, &out));
+
+    // Timeout de enlace (RF05, Seção 9.1): aos 299 ms vivo; aos 300 ms perdido (FALHA_COM)
     rx.last_rx_ms = 1000;
-    TEST_ASSERT_TRUE(link_is_alive(&rx, 1299)); // 299 ms -> link_ok = true
-    TEST_ASSERT_TRUE(link_is_alive(&rx, 1300)); // 300 ms -> link_ok = true
-    TEST_ASSERT_FALSE(link_is_alive(&rx, 1301)); // 301 ms -> link_ok = false (FALHA_COM)
+    TEST_ASSERT_TRUE(link_is_alive(&rx, 1299));  // 299 ms -> link_ok = true
+    TEST_ASSERT_FALSE(link_is_alive(&rx, 1300)); // 300 ms -> link_ok = false
+}
+
+/* Helper: monta um cmd_packet_t válido */
+static cmd_packet_t make_cmd(uint16_t seq, int8_t x, int8_t y)
+{
+    cmd_packet_t p;
+    p.magic = PROTO_MAGIC;
+    p.type = PKT_CMD;
+    p.seq = seq;
+    p.x = x;
+    p.y = y;
+    p.crc = crc8_calc((const uint8_t *)&p, sizeof(cmd_packet_t) - 1);
+    return p;
+}
+
+/* Boot sem controle (A.1 item 8): enlace perdido aos 300 ms contados do boot */
+void test_link_boot_without_controller(void)
+{
+    link_rx_t rx;
+    uint8_t mac[6] = { 1, 2, 3, 4, 5, 6 };
+    link_init(&rx, mac, 1000);   // boot_time_ms = 1000
+
+    TEST_ASSERT_TRUE(link_is_alive(&rx, 1000));
+    TEST_ASSERT_TRUE(link_is_alive(&rx, 1299));
+    TEST_ASSERT_FALSE(link_is_alive(&rx, 1300));
+    TEST_ASSERT_FALSE(link_is_alive(&rx, 5000));
+}
+
+/* Controle reiniciado (A.1 item 1, teste T1): depois da perda de enlace, o
+ * controle volta a contar seq do início e deve ser aceito. */
+void test_link_controller_restart(void)
+{
+    link_rx_t rx;
+    uint8_t mac[6] = { 1, 2, 3, 4, 5, 6 };
+    cmd_packet_t out;
+    link_init(&rx, mac, 0);
+
+    // Controle enviando há tempo: seq alto
+    cmd_packet_t p = make_cmd(1000, 0, 50);
+    TEST_ASSERT_EQUAL(LINK_OK, link_check_cmd(&rx, mac, (const uint8_t *)&p, sizeof(p), 100, &out));
+
+    // Com enlace vivo, seq baixo continua sendo "sequência antiga"
+    p = make_cmd(1, 0, 0);
+    TEST_ASSERT_EQUAL(LINK_ERR_SEQ, link_check_cmd(&rx, mac, (const uint8_t *)&p, sizeof(p), 150, &out));
+    TEST_ASSERT_EQUAL_UINT16(1, rx.rejected_cnt);
+
+    // Controle desligado: enlace cai aos 300 ms sem pacote
+    TEST_ASSERT_FALSE(link_is_alive(&rx, 400));
+
+    // Controle religado: recomeça do seq 1 e é aceito como primeiro pacote
+    p = make_cmd(1, 0, 0);
+    TEST_ASSERT_EQUAL(LINK_OK, link_check_cmd(&rx, mac, (const uint8_t *)&p, sizeof(p), 2000, &out));
+    TEST_ASSERT_EQUAL_UINT16(1, rx.last_seq);
+    TEST_ASSERT_EQUAL_UINT16(1, rx.rejected_cnt);
+    TEST_ASSERT_TRUE(link_is_alive(&rx, 2000));
+
+    // A partir daí a sequência volta a ser verificada normalmente
+    p = make_cmd(2, 0, 0);
+    TEST_ASSERT_EQUAL(LINK_OK, link_check_cmd(&rx, mac, (const uint8_t *)&p, sizeof(p), 2050, &out));
+    TEST_ASSERT_EQUAL(LINK_ERR_SEQ, link_check_cmd(&rx, mac, (const uint8_t *)&p, sizeof(p), 2100, &out));
+
+    // Pacote corrompido depois da queda não reabre o enlace
+    TEST_ASSERT_FALSE(link_is_alive(&rx, 3000));
+    cmd_packet_t bad = make_cmd(1, 0, 0);
+    bad.crc ^= 0xFF;
+    TEST_ASSERT_EQUAL(LINK_ERR_CRC, link_check_cmd(&rx, mac, (const uint8_t *)&bad, sizeof(bad), 3010, &out));
+    TEST_ASSERT_FALSE(link_is_alive(&rx, 3010));
+}
+
+/* =========================================================================
+ * Integração link + máquina de estados, em ticks de CONTROL_PERIOD_MS
+ * ========================================================================= */
+typedef struct {
+    link_rx_t     rx;
+    car_sm_t      sm;
+    car_outputs_t out;
+    uint8_t       mac[6];
+} sim_t;
+
+static void sim_init(sim_t *s, uint32_t boot_ms)
+{
+    const uint8_t mac[6] = { 1, 2, 3, 4, 5, 6 };
+    memcpy(s->mac, mac, sizeof(mac));
+    link_init(&s->rx, s->mac, boot_ms);
+    car_sm_init(&s->sm);
+    car_sm_set_ready(&s->sm);
+}
+
+/* Um tick do laço de controle, opcionalmente com um pacote recebido */
+static void sim_tick(sim_t *s, uint32_t now_ms, const cmd_packet_t *pkt)
+{
+    car_inputs_t in;
+    memset(&in, 0, sizeof(in));
+    cmd_packet_t cmd;
+    if (pkt != NULL &&
+        link_check_cmd(&s->rx, s->mac, (const uint8_t *)pkt, sizeof(*pkt), now_ms, &cmd) == LINK_OK) {
+        in.has_cmd = true;
+        in.cmd_x = cmd.x;
+        in.cmd_y = cmd.y;
+    }
+    in.link_ok = link_is_alive(&s->rx, now_ms);
+    in.now_ms = now_ms;
+    car_sm_step(&s->sm, &in, &s->out);
+}
+
+/* Boot sem controle vai a FALHA_COM aos 300 ms e não aos 299 ms */
+void test_sm_boot_without_controller(void)
+{
+    sim_t s;
+    sim_init(&s, 0);
+    for (uint32_t t = CONTROL_PERIOD_MS; t < LINK_TIMEOUT_MS; t += CONTROL_PERIOD_MS) {
+        sim_tick(&s, t, NULL);
+        TEST_ASSERT_EQUAL(ST_PARADO, s.sm.state);
+    }
+    sim_tick(&s, 299, NULL);
+    TEST_ASSERT_EQUAL(ST_PARADO, s.sm.state);
+    sim_tick(&s, 300, NULL);
+    TEST_ASSERT_EQUAL(ST_FALHA_COM, s.sm.state);
+    TEST_ASSERT_TRUE(s.out.brake_immediate);
+}
+
+/* Wi-Fi lento (A.1 item 8): o primeiro tick só ocorre depois de 300 ms do
+ * boot -> já entra em FALHA_COM e só sai com o joystick no centro. */
+void test_sm_slow_wifi_boot(void)
+{
+    sim_t s;
+    sim_init(&s, 0);
+    sim_tick(&s, 350, NULL);
+    TEST_ASSERT_EQUAL(ST_FALHA_COM, s.sm.state);
+
+    cmd_packet_t p = make_cmd(1, 0, 60);   // controle já com o joystick à frente
+    sim_tick(&s, 360, &p);
+    TEST_ASSERT_EQUAL(ST_FALHA_COM, s.sm.state);
+    TEST_ASSERT_TRUE(s.out.brake_immediate);
+
+    p = make_cmd(2, 0, 0);
+    sim_tick(&s, 410, &p);
+    TEST_ASSERT_EQUAL(ST_PARADO, s.sm.state);
+}
+
+/* T1 completo: em movimento, controle some, volta reiniciado; só retoma com centro */
+void test_sm_controller_restart(void)
+{
+    sim_t s;
+    sim_init(&s, 0);
+    uint16_t seq = 500;
+    cmd_packet_t p;
+
+    p = make_cmd(seq++, 0, 0);
+    sim_tick(&s, 10, &p);                  // arma
+    p = make_cmd(seq++, 0, 80);
+    sim_tick(&s, 60, &p);
+    TEST_ASSERT_EQUAL(ST_OPERANDO, s.sm.state);
+
+    // Controle desligado: FALHA_COM aos 300 ms do último pacote
+    sim_tick(&s, 350, NULL);
+    TEST_ASSERT_EQUAL(ST_OPERANDO, s.sm.state);
+    sim_tick(&s, 360, NULL);
+    TEST_ASSERT_EQUAL(ST_FALHA_COM, s.sm.state);
+    TEST_ASSERT_TRUE(s.out.brake_immediate);
+
+    // Controle religado com seq do início e joystick fora do centro: continua parado
+    p = make_cmd(1, 0, 80);
+    sim_tick(&s, 5000, &p);
+    TEST_ASSERT_EQUAL(ST_FALHA_COM, s.sm.state);
+    TEST_ASSERT_TRUE(s.out.brake_immediate);
+    TEST_ASSERT_TRUE(link_is_alive(&s.rx, 5000));   // enlace voltou (pacote aceito)
+
+    // Joystick no centro: rearma
+    p = make_cmd(2, 0, 0);
+    sim_tick(&s, 5050, &p);
+    TEST_ASSERT_EQUAL(ST_PARADO, s.sm.state);
+    TEST_ASSERT_TRUE(s.sm.armed);
+
+    p = make_cmd(3, 0, 50);
+    sim_tick(&s, 5100, &p);
+    TEST_ASSERT_EQUAL(ST_OPERANDO, s.sm.state);
 }
 
 /* =========================================================================
@@ -429,30 +620,289 @@ void test_state_machine(void)
     TEST_ASSERT_FALSE(sm.obstacle);
 }
 
-#ifdef ESP_PLATFORM
-void app_main(void)
+/* =========================================================================
+ * 7. Máquina de estados: transições restantes da tabela 8.3
+ * ========================================================================= */
+
+/* Helpers para entradas da máquina de estados */
+static car_inputs_t in_cmd(int8_t x, int8_t y)
 {
-    UNITY_BEGIN();
+    car_inputs_t in;
+    memset(&in, 0, sizeof(in));
+    in.link_ok = true;
+    in.has_cmd = true;
+    in.cmd_x = x;
+    in.cmd_y = y;
+    return in;
+}
+
+static car_inputs_t in_sensor(uint16_t dist_cm, bool echo_ok)
+{
+    car_inputs_t in;
+    memset(&in, 0, sizeof(in));
+    in.link_ok = true;
+    in.has_sensor_data = true;
+    in.echo_ok = echo_ok;
+    in.distance_cm = dist_cm;
+    return in;
+}
+
+/* Leva a máquina até OPERANDO com (x, y) */
+static void sm_to_operando(car_sm_t *sm, car_outputs_t *out, int8_t x, int8_t y)
+{
+    car_sm_init(sm);
+    car_sm_set_ready(sm);
+    car_inputs_t in = in_cmd(0, 0);
+    car_sm_step(sm, &in, out);   // arma
+    in = in_cmd(x, y);
+    car_sm_step(sm, &in, out);
+    TEST_ASSERT_EQUAL(ST_OPERANDO, sm->state);
+}
+
+/* INIT: motores parados e todos os comandos rejeitados */
+void test_sm_init_rejects_all(void)
+{
+    car_sm_t sm;
+    car_outputs_t out;
+    car_sm_init(&sm);
+
+    car_inputs_t in = in_cmd(0, 80);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_INIT, sm.state);
+    TEST_ASSERT_TRUE(out.brake_immediate);
+    TEST_ASSERT_EQUAL_UINT16(1, sm.rejected_cmd_cnt);
+
+    // Mesmo sem enlace, INIT não vai a FALHA_COM (só "qualquer != INIT")
+    in.link_ok = false;
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_INIT, sm.state);
+}
+
+/* Boot com joystick fora do centro só arma depois do neutro */
+void test_sm_boot_off_center_arms_after_neutral(void)
+{
+    car_sm_t sm;
+    car_outputs_t out;
+    car_sm_init(&sm);
+    car_sm_set_ready(&sm);
+
+    car_inputs_t in = in_cmd(0, 70);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_PARADO, sm.state);
+    TEST_ASSERT_FALSE(sm.armed);
+    TEST_ASSERT_TRUE(out.brake_immediate);
+    TEST_ASSERT_EQUAL_UINT16(1, sm.rejected_cmd_cnt);
+
+    car_sm_step(&sm, &in, &out);   // continua ignorado
+    TEST_ASSERT_EQUAL(ST_PARADO, sm.state);
+    TEST_ASSERT_EQUAL_UINT16(2, sm.rejected_cmd_cnt);
+
+    in = in_cmd(0, 0);             // neutro arma, mas não anda
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_PARADO, sm.state);
+    TEST_ASSERT_TRUE(sm.armed);
+
+    in = in_cmd(0, 70);            // agora sim
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OPERANDO, sm.state);
+}
+
+/* OPERANDO -> FALHA_COM e OBSTACULO -> FALHA_COM */
+void test_sm_link_lost_from_any_state(void)
+{
+    car_sm_t sm;
+    car_outputs_t out;
+    car_inputs_t in;
+
+    sm_to_operando(&sm, &out, 0, 60);
+    memset(&in, 0, sizeof(in));
+    in.link_ok = false;
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_FALHA_COM, sm.state);
+    TEST_ASSERT_TRUE(out.brake_immediate);
+    TEST_ASSERT_EQUAL_INT8(0, out.target_left);
+    TEST_ASSERT_EQUAL_INT8(0, out.target_right);
+
+    sm_to_operando(&sm, &out, 0, 60);
+    in = in_sensor(10, true);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
+    memset(&in, 0, sizeof(in));
+    in.link_ok = false;
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_FALHA_COM, sm.state);
+    TEST_ASSERT_TRUE(out.brake_immediate);
+
+    // FALHA_COM: comando fora do centro rejeitado, mesmo com enlace de volta
+    uint16_t rej = sm.rejected_cmd_cnt;
+    in = in_cmd(30, 0);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_FALHA_COM, sm.state);
+    TEST_ASSERT_EQUAL_UINT16(rej + 1, sm.rejected_cmd_cnt);
+}
+
+/* PARADO -> OBSTACULO e saída só com centered */
+void test_sm_obstacle_from_parado_and_exit(void)
+{
+    car_sm_t sm;
+    car_outputs_t out;
+    car_sm_init(&sm);
+    car_sm_set_ready(&sm);
+
+    car_inputs_t in = in_sensor(20, true);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
+    TEST_ASSERT_TRUE(out.brake_immediate);
+
+    // Joystick em ré: liberado
+    in = in_cmd(0, -50);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
+    TEST_ASSERT_EQUAL_INT8(-50, out.target_left);
+
+    // Obstáculo some (3 leituras > 30 cm) com o joystick ainda em ré: continua em OBSTACULO
+    for (int i = 0; i < OBSTACLE_EXIT_CYCLES; i++) {
+        in = in_sensor(80, true);
+        car_sm_step(&sm, &in, &out);
+    }
+    TEST_ASSERT_FALSE(sm.obstacle);
+    TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
+
+    // Só sai com o joystick no centro
+    in = in_cmd(0, 0);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_PARADO, sm.state);
+    TEST_ASSERT_TRUE(out.brake_immediate);
+}
+
+/* OBSTACULO: avanço bloqueado (y = min(y, 0)), giro liberado */
+void test_sm_obstacle_turn_allowed(void)
+{
+    car_sm_t sm;
+    car_outputs_t out;
+    sm_to_operando(&sm, &out, 0, 60);
+    car_inputs_t in = in_sensor(OBSTACLE_ENTER_CM, true);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
+    TEST_ASSERT_TRUE(out.brake_immediate);   // entra parando imediatamente
+
+    // Frente + direita: só o giro passa -> mix(60, 0) = (60, -60)
+    uint16_t rej = sm.rejected_cmd_cnt;
+    in = in_cmd(60, 50);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL_INT8(60, out.target_left);
+    TEST_ASSERT_EQUAL_INT8(-60, out.target_right);
+    TEST_ASSERT_EQUAL_UINT16(rej + 1, sm.rejected_cmd_cnt);
+
+    // Giro puro no lugar: liberado, sem rejeição
+    in = in_cmd(-40, 0);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL_INT8(-40, out.target_left);
+    TEST_ASSERT_EQUAL_INT8(40, out.target_right);
+    TEST_ASSERT_EQUAL_UINT16(rej + 1, sm.rejected_cmd_cnt);
+}
+
+/* Histerese 25/30 cm: 26 cm não entra; 25 entra; 30 não sai; > 30 x3 sai */
+void test_sm_obstacle_hysteresis_edges(void)
+{
+    car_sm_t sm;
+    car_outputs_t out;
+    sm_to_operando(&sm, &out, 0, 40);
+
+    car_inputs_t in = in_sensor(OBSTACLE_ENTER_CM + 1, true);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OPERANDO, sm.state);
+    TEST_ASSERT_FALSE(sm.obstacle);
+
+    in = in_sensor(OBSTACLE_ENTER_CM, true);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
+
+    for (int i = 0; i < 5; i++) {
+        in = in_sensor(OBSTACLE_EXIT_CM, true);   // exatamente 30: não conta como livre
+        car_sm_step(&sm, &in, &out);
+    }
+    TEST_ASSERT_TRUE(sm.obstacle);
+
+    // Duas leituras livres e uma de 30 zeram a contagem
+    in = in_sensor(OBSTACLE_EXIT_CM + 1, true);
+    car_sm_step(&sm, &in, &out);
+    car_sm_step(&sm, &in, &out);
+    in = in_sensor(OBSTACLE_EXIT_CM, true);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_TRUE(sm.obstacle);
+
+    in = in_sensor(OBSTACLE_EXIT_CM + 1, true);
+    for (int i = 0; i < OBSTACLE_EXIT_CYCLES - 1; i++) {
+        car_sm_step(&sm, &in, &out);
+        TEST_ASSERT_TRUE(sm.obstacle);
+    }
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_FALSE(sm.obstacle);
+}
+
+/* T5: sensor desconectado em avanço -> 3 leituras sem eco bloqueiam (OPERANDO -> OBSTACULO);
+ * leituras fora de faixa (< 2 cm, > 400 cm) também contam como inválidas */
+void test_sm_sensor_invalid_blocks_forward(void)
+{
+    car_sm_t sm;
+    car_outputs_t out;
+    sm_to_operando(&sm, &out, 0, 60);
+
+    car_inputs_t in = in_sensor(PROTO_DIST_INVALID, false);
+    car_sm_step(&sm, &in, &out);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OPERANDO, sm.state);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
+    TEST_ASSERT_FALSE(out.sensor_valid);
+
+    // Fora de faixa também é inválido
+    sm_to_operando(&sm, &out, 0, 60);
+    in = in_sensor(SENSOR_VALID_MAX_CM + 1, true);
+    car_sm_step(&sm, &in, &out);
+    in = in_sensor(SENSOR_VALID_MIN_CM - 1, true);
+    car_sm_step(&sm, &in, &out);
+    car_sm_step(&sm, &in, &out);
+    TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
+    TEST_ASSERT_FALSE(out.sensor_valid);
+}
+
+static void run_all_tests(void)
+{
     RUN_TEST(test_joystick_normalize);
     RUN_TEST(test_joystick_deadzone);
     RUN_TEST(test_mixer);
     RUN_TEST(test_ramp);
     RUN_TEST(test_crc8);
     RUN_TEST(test_link_validation);
+    RUN_TEST(test_link_boot_without_controller);
+    RUN_TEST(test_link_controller_restart);
+    RUN_TEST(test_sm_boot_without_controller);
+    RUN_TEST(test_sm_slow_wifi_boot);
+    RUN_TEST(test_sm_controller_restart);
     RUN_TEST(test_state_machine);
+    RUN_TEST(test_sm_init_rejects_all);
+    RUN_TEST(test_sm_boot_off_center_arms_after_neutral);
+    RUN_TEST(test_sm_link_lost_from_any_state);
+    RUN_TEST(test_sm_obstacle_from_parado_and_exit);
+    RUN_TEST(test_sm_obstacle_turn_allowed);
+    RUN_TEST(test_sm_obstacle_hysteresis_edges);
+    RUN_TEST(test_sm_sensor_invalid_blocks_forward);
+}
+
+#ifdef ESP_PLATFORM
+void app_main(void)
+{
+    UNITY_BEGIN();
+    run_all_tests();
     UNITY_END();
 }
 #else
 int main(void)
 {
     UNITY_BEGIN();
-    RUN_TEST(test_joystick_normalize);
-    RUN_TEST(test_joystick_deadzone);
-    RUN_TEST(test_mixer);
-    RUN_TEST(test_ramp);
-    RUN_TEST(test_crc8);
-    RUN_TEST(test_link_validation);
-    RUN_TEST(test_state_machine);
+    run_all_tests();
     return UNITY_END();
 }
 #endif

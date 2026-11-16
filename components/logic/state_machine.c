@@ -21,7 +21,7 @@ void car_sm_init(car_sm_t *sm)
     sm->consecutive_valid_cnt = 0;
     sm->consecutive_fail_cnt = 0;
     sm->consecutive_clear_cnt = 0;
-    sm->current_distance_cm = 100;
+    sm->current_distance_cm = PROTO_DIST_INVALID; /* sem leitura ainda */
     sm->rejected_cmd_cnt = 0;
 }
 
@@ -62,7 +62,7 @@ void car_sm_step(car_sm_t *sm, const car_inputs_t *in, car_outputs_t *out)
         } else {
             sm->consecutive_valid_cnt = 0;
             sm->consecutive_fail_cnt++;
-            sm->current_distance_cm = 0xFFFF;
+            sm->current_distance_cm = PROTO_DIST_INVALID;
 
             if (sm->sensor_valid && sm->consecutive_fail_cnt >= SENSOR_FAIL_CYCLES) {
                 sm->sensor_valid = false;
@@ -82,7 +82,7 @@ void car_sm_step(car_sm_t *sm, const car_inputs_t *in, car_outputs_t *out)
         } else {
             if (sm->current_distance_cm <= OBSTACLE_ENTER_CM) {
                 sm->obstacle = true;
-            } else if (sm->obstacle && sm->consecutive_clear_cnt >= 3) {
+            } else if (sm->obstacle && sm->consecutive_clear_cnt >= OBSTACLE_EXIT_CYCLES) {
                 sm->obstacle = false;
             }
         }

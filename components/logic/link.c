@@ -59,6 +59,16 @@ link_verdict_t link_check_cmd(link_rx_t *rx, const uint8_t *src_mac, const uint8
         return LINK_ERR_CRC;
     }
 
+    /* Enlace perdido (FALHA_COM): o controle pode ter reiniciado e voltado a
+     * contar seq do início. Sem isso, os pacotes novos seriam rejeitados como
+     * "sequência antiga" por até 32768 pacotes (~27 min) e o teste T1 falharia.
+     * O próximo pacote íntegro passa a ser tratado como "primeiro pacote".
+     * Isso não libera o carrinho: sair de FALHA_COM continua exigindo o
+     * joystick no centro (RF07, state_machine.c). */
+    if (rx->has_received && !link_is_alive(rx, now_ms)) {
+        rx->has_received = false;
+    }
+
     /* 2. Sequência antiga ou repetida (aceitar se diff > 0 ou for o 1º pacote) */
     if (rx->has_received) {
         int16_t diff = (int16_t)(pkt->seq - rx->last_seq);
@@ -69,7 +79,8 @@ link_verdict_t link_check_cmd(link_rx_t *rx, const uint8_t *src_mac, const uint8
     }
 
     /* 3. Faixa de valores: x e y devem estar em -100..100 */
-    if (pkt->x < -100 || pkt->x > 100 || pkt->y < -100 || pkt->y > 100) {
+    if (pkt->x < PROTO_AXIS_MIN || pkt->x > PROTO_AXIS_MAX ||
+        pkt->y < PROTO_AXIS_MIN || pkt->y > PROTO_AXIS_MAX) {
         rx->rejected_cnt++;
         return LINK_ERR_RANGE;
     }
@@ -92,9 +103,13 @@ bool link_is_alive(const link_rx_t *rx, uint32_t now_ms)
         return false;
     }
 
-    /* Se nunca recebeu pacote, avalia a partir do boot */
+    /* Sem pacote aceito desde o boot (ou desde a última queda), avalia a partir
+     * do boot. Depois de uma queda, boot_time_ms já está mais de
+     * LINK_TIMEOUT_MS no passado, então o enlace continua perdido até um
+     * pacote válido ser aceito. */
     uint32_t ref_time = rx->has_received ? rx->last_rx_ms : rx->boot_time_ms;
 
-    /* RF05: Sem pacote válido por mais de 300 ms, link_ok = false */
-    return (now_ms - ref_time) <= LINK_TIMEOUT_MS;
+    /* RF05: enlace perdido ao completar LINK_TIMEOUT_MS sem pacote válido.
+     * Seção 9.1: FALHA_COM aos 300 ms e não aos 299 ms. */
+    return (now_ms - ref_time) < LINK_TIMEOUT_MS;
 }

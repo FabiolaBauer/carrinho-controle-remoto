@@ -15,6 +15,10 @@
 
 #define PROTO_MAGIC 0xA5
 
+#define PROTO_AXIS_MIN      (-100)   /**< Valor mínimo de x e y */
+#define PROTO_AXIS_MAX      100      /**< Valor máximo de x e y */
+#define PROTO_DIST_INVALID  0xFFFF   /**< distance_cm quando o sensor está inválido */
+
 /**
  * @brief Tipos de pacotes
  */
