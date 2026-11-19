@@ -142,7 +142,7 @@ Na primeira vez, os MACs ainda são placeholders. Siga a seção 5 e grave as du
 
 ## 5. MACs das placas
 
-Os valores de `CONTROLLER_MAC` e `CAR_MAC` em `components/logic/include/config.h` são **placeholders**. O carrinho só aceita pacotes cujo MAC de origem seja `CONTROLLER_MAC`.
+Os valores de `CONTROLLER_MAC` e `CAR_MAC` em `components/logic/include/config.h` precisam ser os MACs das suas placas. O carrinho só aceita pacotes cujo MAC de origem seja `CONTROLLER_MAC`.
 
 1. Grave o **carrinho** (modo normal) e abra o monitor. No boot aparece:
    `car_main: MAC do Carrinho: xx:xx:xx:xx:xx:xx`
@@ -422,7 +422,7 @@ Nenhum destes testes foi executado ainda: dependem do hardware montado. Em todos
 | `MAX_PWM_PCT` | 100 | `config.h` (ajustar no T2) |
 | `BATT_DIV_RATIO_X1000` | 3000 (divisor 3:1) | `config.h` (medir o divisor real) |
 | `OBSTACLE_ENTER_CM` / `OBSTACLE_EXIT_CM` | 25 / 30 | `config.h` |
-| `CONTROLLER_MAC` / `CAR_MAC` | Placeholders | `config.h` (seção 5) |
+| `CONTROLLER_MAC` / `CAR_MAC` | MACs das placas usadas | `config.h` (seção 5) |
 | `INVERT_*` | Todos `false` | `config.h` |
 | Canal Wi-Fi | 1 | `CHANNEL` |
 | Sem eco do HC-SR04 | Conta como **sensor inválido** (bloqueia o avanço), como na proposta | `state_machine.c` |

@@ -20,7 +20,7 @@
 #define LINK_TIMEOUT_MS         300     /**< Timeout do sinal de vida do enlace (RF05) */
 #define DEADZONE_PCT            10      /**< Zona morta de 10% nos eixos do joystick (RF02) */
 
-/* MACs padrão [CONFIRMAR: atualizar com os MACs reais lidos no boot] */
+/* MACs das placas (lidos no boot de cada firmware; ver README, seção 5) */
 #define CONTROLLER_MAC          { 0x24, 0x6F, 0x28, 0x00, 0x00, 0x01 }
 #define CAR_MAC                 { 0x24, 0x6F, 0x28, 0x00, 0x00, 0x02 }
 
