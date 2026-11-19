@@ -155,7 +155,7 @@ static esp_err_t wifi_esp_now_init(void)
     uint8_t my_mac[6];
     ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_STA, my_mac));
     ESP_LOGI(TAG, "MAC do Carrinho: " MACSTR, MAC2STR(my_mac));
-    ESP_LOGI(TAG, ">> Copie este valor para CAR_MAC em components/logic/include/config.h <<");
+    ESP_LOGI(TAG, ">> Copie este valor para CAR_MAC em components/logic/include/config_macs.h <<");
     ESP_LOGI(TAG, "Canal Wi-Fi: %d", CHANNEL);
 
     ESP_ERROR_CHECK(esp_now_init());

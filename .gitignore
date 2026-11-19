@@ -8,3 +8,9 @@ sdkconfig.old
 
 # Binários do teste no PC
 test_apps/logic_host/host_build/
+
+# MACs reais das placas (copiar de config_macs.example.h)
+components/logic/include/config_macs.h
+
+# Configuracao local do VS Code / extensao ESP-IDF (caminho da instalacao em cada maquina)
+.vscode/

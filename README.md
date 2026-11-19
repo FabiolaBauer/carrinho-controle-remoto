@@ -134,7 +134,7 @@ Cada placa aparece numa porta COM diferente. Veja no Gerenciador de Dispositivos
 2. Ligue só o **controle** e anote a porta (`COMy`). Grave pela seção 4.2.
 3. Para ver as duas ao mesmo tempo, abra dois terminais do ESP-IDF, um com `idf.py -p COMx monitor` na pasta `carrinho` e outro com `idf.py -p COMy monitor` na pasta `controle`.
 
-Na primeira vez, os MACs ainda são placeholders. Siga a seção 5 e grave as duas de novo.
+Na primeira vez, sem o `config_macs.h`, os MACs ficam zerados (o build avisa com um `#warning`). Siga a seção 5 e grave as duas de novo.
 
 `build/`, `build_*/` e `sdkconfig` estão no `.gitignore`. Só os `sdkconfig.defaults*` são versionados.
 
@@ -142,13 +142,17 @@ Na primeira vez, os MACs ainda são placeholders. Siga a seção 5 e grave as du
 
 ## 5. MACs das placas
 
-Os valores de `CONTROLLER_MAC` e `CAR_MAC` em `components/logic/include/config.h` precisam ser os MACs das suas placas. O carrinho só aceita pacotes cujo MAC de origem seja `CONTROLLER_MAC`.
+Os MACs `CONTROLLER_MAC` e `CAR_MAC` ficam em `components/logic/include/config_macs.h`. Esse arquivo é local e está no `.gitignore`, então os MACs reais não vão para o repositório. O `config.h` inclui esse arquivo se ele existir; se não existir, usa MACs zerados e o build mostra um aviso. O carrinho só aceita pacotes cujo MAC de origem seja `CONTROLLER_MAC`.
 
+0. Crie o arquivo local a partir do modelo versionado:
+   ```sh
+   cp components/logic/include/config_macs.example.h components/logic/include/config_macs.h
+   ```
 1. Grave o **carrinho** (modo normal) e abra o monitor. No boot aparece:
    `car_main: MAC do Carrinho: xx:xx:xx:xx:xx:xx`
 2. Grave o **controle** e abra o monitor. Aparece:
    `radio: MAC do Controle: xx:xx:xx:xx:xx:xx`
-3. Preencha o `config.h` (os bytes em hexadecimal, na mesma ordem):
+3. Preencha o `config_macs.h` (os bytes em hexadecimal, na mesma ordem):
    ```c
    #define CONTROLLER_MAC { 0x.., 0x.., 0x.., 0x.., 0x.., 0x.. }
    #define CAR_MAC        { 0x.., 0x.., 0x.., 0x.., 0x.., 0x.. }
@@ -359,7 +363,7 @@ Nenhum destes testes foi executado ainda: dependem do hardware montado. Em todos
 - [ ] Gravação e teste do carrinho no hardware.
 - [ ] Gravação e teste do controle no hardware (calibração, LED, telemetria).
 - [ ] Testes de aceitação T1 a T6.
-- [ ] MACs reais em `config.h` (ainda são placeholders).
+- [ ] MACs reais em `config_macs.h` (local, fora do git).
 
 ---
 
@@ -422,7 +426,7 @@ Nenhum destes testes foi executado ainda: dependem do hardware montado. Em todos
 | `MAX_PWM_PCT` | 100 | `config.h` (ajustar no T2) |
 | `BATT_DIV_RATIO_X1000` | 3000 (divisor 3:1) | `config.h` (medir o divisor real) |
 | `OBSTACLE_ENTER_CM` / `OBSTACLE_EXIT_CM` | 25 / 30 | `config.h` |
-| `CONTROLLER_MAC` / `CAR_MAC` | MACs das placas usadas | `config.h` (seção 5) |
+| `CONTROLLER_MAC` / `CAR_MAC` | MACs das placas usadas | `config_macs.h`, local (seção 5) |
 | `INVERT_*` | Todos `false` | `config.h` |
 | Canal Wi-Fi | 1 | `CHANNEL` |
 | Sem eco do HC-SR04 | Conta como **sensor inválido** (bloqueia o avanço), como na proposta | `state_machine.c` |

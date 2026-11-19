@@ -20,9 +20,15 @@
 #define LINK_TIMEOUT_MS         300     /**< Timeout do sinal de vida do enlace (RF05) */
 #define DEADZONE_PCT            10      /**< Zona morta de 10% nos eixos do joystick (RF02) */
 
-/* MACs das placas (lidos no boot de cada firmware; ver README, seção 5) */
-#define CONTROLLER_MAC          { 0x24, 0x6F, 0x28, 0x00, 0x00, 0x01 }
-#define CAR_MAC                 { 0x24, 0x6F, 0x28, 0x00, 0x00, 0x02 }
+/* MACs das placas: ficam em config_macs.h, que é local e ignorado pelo git.
+ * Crie-o copiando config_macs.example.h (ver README, seção 5). */
+#if defined(__has_include) && __has_include("config_macs.h")
+#include "config_macs.h"
+#else
+#warning "config_macs.h nao encontrado: usando MACs zerados. Copie config_macs.example.h para config_macs.h."
+#define CONTROLLER_MAC          { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#define CAR_MAC                 { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#endif
 
 /* Inversões lógicas */
 #define INVERT_X                false

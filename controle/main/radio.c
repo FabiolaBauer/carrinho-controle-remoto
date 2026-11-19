@@ -88,7 +88,7 @@ esp_err_t radio_init(QueueHandle_t telem_queue)
     uint8_t my_mac[6];
     ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_STA, my_mac));
     ESP_LOGI(TAG, "MAC do Controle: " MACSTR, MAC2STR(my_mac));
-    ESP_LOGI(TAG, ">> Copie este valor para CONTROLLER_MAC em components/logic/include/config.h <<");
+    ESP_LOGI(TAG, ">> Copie este valor para CONTROLLER_MAC em components/logic/include/config_macs.h <<");
     ESP_LOGI(TAG, "Canal Wi-Fi: %d", CHANNEL);
 
     ESP_ERROR_CHECK(esp_now_init());
