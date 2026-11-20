@@ -139,8 +139,10 @@ esp_err_t joy_read(int8_t *x, int8_t *y)
     int8_t nx = joystick_normalize(rx, s_center_x, 0, ADC_RAW_MAX, INVERT_X);
     int8_t ny = joystick_normalize(ry, s_center_y, 0, ADC_RAW_MAX, INVERT_Y);
 
-    /* Zona morta de DEADZONE_PCT com reescala contínua (RF02) */
-    *x = joystick_deadzone(nx, DEADZONE_PCT);
+    /* Zona morta com reescala contínua (RF02). O X tem zona maior
+     * (DEADZONE_X_PCT): um desvio pequeno para o lado ao empurrar para
+     * frente não faz o carrinho virar. */
+    *x = joystick_deadzone(nx, DEADZONE_X_PCT);
     *y = joystick_deadzone(ny, DEADZONE_PCT);
     s_last_x = *x;
     s_last_y = *y;

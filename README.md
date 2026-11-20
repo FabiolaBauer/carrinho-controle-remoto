@@ -248,7 +248,7 @@ No boot, logo depois de subir o rádio, o controle mede o centro dos dois eixos:
 - **Deixe o joystick solto até aparecer `Centro calibrado: X=... Y=...`.** Se ele estiver inclinado durante a calibração, essa posição vira o "centro".
 - Centro fora de **1500 a 2600** gera o aviso `Centro do eixo ... fora do esperado`. O firmware continua, mas confira a ligação do joystick (VCC em 3V3, VRx e VRy nos pinos certos).
 - Os extremos são 0 e 4095 (12 bits), com escalas separadas para cada lado do centro. Assim o centro físico vira 0 mesmo que não esteja no meio da faixa.
-- Depois vem a zona morta de 10% (`DEADZONE_PCT`), com reescala contínua.
+- Depois vem a zona morta, com reescala contínua: **10% no eixo Y** (`DEADZONE_PCT`) e **25% no eixo X** (`DEADZONE_X_PCT`). A zona maior no X deixa andar reto mesmo com o joystick um pouco torto. Se ainda virar sem querer, aumente `DEADZONE_X_PCT`; se demorar demais para começar a virar, diminua.
 - Para inverter um eixo, use `INVERT_X` ou `INVERT_Y` no `config.h`. O eixo Y para a frente deve dar valor **positivo**, e o eixo X para a direita também.
 
 ### 9.2 Envio

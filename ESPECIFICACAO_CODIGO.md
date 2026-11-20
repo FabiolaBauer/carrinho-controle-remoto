@@ -56,7 +56,7 @@ Numeração e texto seguem a proposta v2 (1 joystick + ponte H, de 08/11). **[CO
 | ID | Requisito |
 | --- | --- |
 | RF01 | O controle envia o estado do joystick por ESP-NOW a 20 Hz, com número de sequência. |
-| RF02 | Eixo Y define frente, ré e parada (centro); eixo X define direita/esquerda; o ESP32 do carrinho mistura os eixos e aplica PWM e sentido a cada motor. Zona morta de 10% nos eixos. |
+| RF02 | Eixo Y define frente, ré e parada (centro); eixo X define direita/esquerda; o ESP32 do carrinho mistura os eixos e aplica PWM e sentido a cada motor. Zona morta de 10% no eixo Y e 25% no eixo X (maior no giro para facilitar andar reto; decisão do grupo, 20/11). |
 | RF03 | Com o joystick no neutro (zona morta), os motores ficam parados. |
 | RF04 | Com obstáculo a 15 cm ou menos, ou sensor sem leitura válida, o carrinho bloqueia o avanço. |
 | RF05 | Sem pacote válido por mais de 300 ms, o carrinho para. |
@@ -224,7 +224,7 @@ typedef struct __attribute__((packed)) {   // carrinho -> controle, 5 Hz
 1. **Calibração no boot:** com o joystick em repouso, média de ~500 ms de leituras (por exemplo 25 amostras a cada 20 ms) para obter o centro de cada eixo. Se o centro ficar fora de 1500–2600 (12 bits), logar aviso e continuar. Extremos: 0 e o máximo do ADC, com escalas separadas para o lado positivo e o negativo, para que o centro físico vire 0.
 2. **ADC (oneshot):** `adc_oneshot_new_unit()` → `adc_oneshot_config_channel()` com `atten = ADC_ATTEN_DB_12` e `bitwidth = ADC_BITWIDTH_DEFAULT` → `adc_oneshot_read()`. Média curta de 4 amostras. Tratar `ESP_ERR_TIMEOUT` repetindo a leitura.
 3. **Normalização:** `v` em −100..100 por eixo; aplicar `INVERT_*`.
-4. **Zona morta de 10%:** se `|v| < 10` então `v = 0`; senão reescalar `(|v| − 10) × 100 / 90` mantendo o sinal, para não haver salto na saída da zona morta.
+4. **Zona morta (Y: 10%, `DEADZONE_PCT`; X: 25%, `DEADZONE_X_PCT`):** com zona `d`, se `|v| ≤ d` então `v = 0`; senão reescalar `(|v| − d) × 100 / (100 − d)` mantendo o sinal, para não haver salto na saída da zona morta.
 5. **Envio a cada 50 ms** (20 Hz), sempre, mesmo com x = y = 0, por um `esp_timer` periódico (`esp_timer_create` + `esp_timer_start_periodic(timer, 50000)`, despacho `ESP_TIMER_TASK`). Incrementar `seq`. O callback do timer é curto e não bloqueia.
 6. **Telemetria recebida:** o callback copia o pacote para uma fila; uma tarefa de UI valida o CRC e faz o log com `ESP_LOGI`, por exemplo `estado=OPERANDO dist=42cm bat=7430mV rej=0`. Sem telemetria por mais de 1 s, logar `SEM TELEMETRIA` uma vez por segundo.
 7. **LED (GPIO 2), pela tarefa de UI:** PARADO aceso fixo; OPERANDO pisca lento (1 Hz); OBSTACULO pisca rápido (4 Hz); FALHA_COM duplo piscar a cada 1 s; sem telemetria, apagado.
@@ -348,6 +348,7 @@ Observação para o T2: a distância final depende da velocidade máxima e do pe
 #define TELEM_PERIOD_MS         200    // 5 Hz
 #define LINK_TIMEOUT_MS         300
 #define DEADZONE_PCT            10
+#define DEADZONE_X_PCT          25
 // carrinho
 #define CONTROL_PERIOD_MS       10
 #define SENSOR_PERIOD_MS        60

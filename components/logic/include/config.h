@@ -18,7 +18,8 @@
 #define CMD_PERIOD_MS           50      /**< Período de envio do controle (20 Hz) */
 #define TELEM_PERIOD_MS         200     /**< Período de telemetria do carrinho (5 Hz) */
 #define LINK_TIMEOUT_MS         300     /**< Timeout do sinal de vida do enlace (RF05) */
-#define DEADZONE_PCT            10      /**< Zona morta de 10% nos eixos do joystick (RF02) */
+#define DEADZONE_PCT            10      /**< Zona morta do eixo Y (frente/ré) do joystick (RF02) */
+#define DEADZONE_X_PCT          25      /**< Zona morta do eixo X (giro), maior para facilitar andar reto */
 
 /* MACs das placas: ficam em config_macs.h, que é local e ignorado pelo git.
  * Crie-o copiando config_macs.example.h (ver README, seção 5). */
