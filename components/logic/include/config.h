@@ -42,8 +42,8 @@
 #define CONTROL_PERIOD_MS       10      /**< Período do laço de controle do carrinho (100 Hz) */
 #define SENSOR_PERIOD_MS        60      /**< Período de amostragem do HC-SR04 */
 #define SENSOR_ECHO_TIMEOUT_MS  30      /**< Timeout de espera do pulso de eco */
-#define OBSTACLE_ENTER_CM       25      /**< Limiar para entrar em ST_OBSTACULO (RF04) */
-#define OBSTACLE_EXIT_CM        30      /**< Limiar para sair de ST_OBSTACULO (histerese) */
+#define OBSTACLE_ENTER_CM       5       /**< Limiar para entrar em ST_OBSTACULO (RF04) */
+#define OBSTACLE_EXIT_CM        10      /**< Limiar para sair de ST_OBSTACULO (histerese) */
 #define SENSOR_VALID_MIN_CM     2       /**< Leitura mínima válida do HC-SR04 */
 #define SENSOR_VALID_MAX_CM     400     /**< Leitura máxima válida do HC-SR04 */
 #define SENSOR_FAIL_CYCLES      3       /**< Ciclos sem eco/inválidos para declarar sensor com defeito */
@@ -54,7 +54,7 @@
 
 #define PWM_FREQ_HZ             5000    /**< Frequência PWM dos motores */
 #define PWM_DUTY_MAX            255     /**< Duty máximo com LEDC_TIMER_8_BIT (2^8 - 1) */
-#define PWM_MIN_PCT             30      /**< PWM mínimo mapeado para vencer atrito estático [CONFIRMAR] */
+#define PWM_MIN_PCT             60      /**< PWM mínimo mapeado para vencer atrito estático */
 #define MAX_PWM_PCT             100     /**< PWM máximo permitido */
 #define RAMP_UP_PCT_PER_S       200     /**< Rampa de aceleração: 200%/s (0 -> 100% em 0,5 s) */
 #define REVERSE_DWELL_MS        50      /**< Tempo de pausa em 0 ao inverter sentido dos motores */
