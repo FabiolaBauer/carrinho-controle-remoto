@@ -46,6 +46,8 @@
 #define OBSTACLE_EXIT_CM        20      /**< Limiar para sair de ST_OBSTACULO (histerese) */
 #define SENSOR_VALID_MIN_CM     2       /**< Leitura mínima válida do HC-SR04 */
 #define SENSOR_VALID_MAX_CM     400     /**< Leitura máxima válida do HC-SR04 */
+#define SENSOR_NO_ECHO_FAR_CM   SENSOR_VALID_MAX_CM /**< Distância informada quando o ECHO sobe mas o eco não volta (nada no alcance = livre) */
+#define SENSOR_ECHO_BUSY_MAX_CYCLES 5   /**< Ciclos seguidos com o ECHO ainda alto antes do disparo aceitos como "livre"; acima disso = ECHO preso (inválido) */
 #define SENSOR_FAIL_CYCLES      3       /**< Ciclos sem eco/inválidos para declarar sensor com defeito */
 #define SENSOR_RECOVER_CYCLES   3       /**< Ciclos válidos para recuperar sensor */
 #define OBSTACLE_EXIT_CYCLES    3       /**< Leituras válidas seguidas > OBSTACLE_EXIT_CM para sair do obstáculo */

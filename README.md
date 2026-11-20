@@ -352,7 +352,7 @@ Nenhum destes testes foi executado ainda: dependem do hardware montado. Em todos
 | **T5** | RF04 (sensor inválido) | Carrinho avançando. Desconecte o ECHO (ou o sensor). Observe `EVT state OPERANDO->OBSTACULO`. Reconecte, solte o joystick no centro e confira a volta a PARADO. | Avanço bloqueado em ≤ 500 ms (3 leituras × 60 ms + latência); recupera ao reconectar com o joystick no centro. |
 | **T6** | RF03, RNF04 | Em movimento, solte o joystick. Meça de `EVT center_detected` até `EVT motors_zero`. Repita 10 vezes. | ≤ 300 ms em 10 de 10. |
 
-> Sem eco conta como **sensor inválido** e bloqueia o avanço. Em espaço aberto, sem nada a menos de uns 4 m, o carrinho pode ficar bloqueado. Faça os ensaios com um anteparo ao alcance.
+> **Sem eco = caminho livre.** Se o ECHO sobe mas o eco não volta (nada a menos de uns 4 m), a leitura vale `dist=400cm` e o carrinho continua andando. Só bloqueia como **sensor inválido** quando o ECHO nem sobe (sensor desligado ou ECHO solto, como no T5) ou fica preso em nível alto por mais de 5 ciclos (300 ms).
 
 ---
 
@@ -435,7 +435,7 @@ Nenhum destes testes foi executado ainda: dependem do hardware montado. Em todos
 | `CONTROLLER_MAC` / `CAR_MAC` | MACs das placas usadas | `config_macs.h`, local (seção 5) |
 | `INVERT_*` | Todos `false` | `config.h` |
 | Canal Wi-Fi | 1 | `CHANNEL` |
-| Sem eco do HC-SR04 | Conta como **sensor inválido** (bloqueia o avanço), como na proposta | `state_machine.c` |
+| Sem eco do HC-SR04 | ECHO sobe e o eco não volta: **livre** (`dist=400cm`). ECHO não sobe ou fica preso: **sensor inválido** (bloqueia o avanço) | `sonar.c` |
 | Segundo motor "extra" | Não usado | — |
 | IDs RF/RNF | Seguem a proposta v2 de 08/11 | Seção 2 da especificação |
 

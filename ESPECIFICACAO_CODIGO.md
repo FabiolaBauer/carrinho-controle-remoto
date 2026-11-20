@@ -243,7 +243,7 @@ Tudo não bloqueante, sem `vTaskDelay` dentro da lógica de controle.
 
 Todo o estado do carrinho é lido e escrito **apenas** pelo laço de controle (sem mutex). Callback ESP-NOW e tarefa do sensor só colocam dados em filas.
 
-**HC-SR04 sem `esp_rom_delay_us`:** essa função está na lista de APIs internas e instáveis do v6.1 e não deve ser usada (RNF05). O pulso de TRIG de 10 µs é feito com `gpio_set_level(TRIG, 1)`, espera ativa lendo `esp_timer_get_time()` até passarem ≥ 10 µs, e `gpio_set_level(TRIG, 0)`. A largura do eco é medida por **interrupção de GPIO** no ECHO (`GPIO_INTR_ANYEDGE`, `gpio_install_isr_service()`, `gpio_isr_handler_add()`): na borda de subida guarda `esp_timer_get_time()`; na de descida calcula a largura e libera um semáforo binário com `xSemaphoreGiveFromISR()`. A tarefa do sensor espera o semáforo com timeout de 30 ms; estourou = sem eco. Distância em cm = `largura_us / 58`.
+**HC-SR04 sem `esp_rom_delay_us`:** essa função está na lista de APIs internas e instáveis do v6.1 e não deve ser usada (RNF05). O pulso de TRIG de 10 µs é feito com `gpio_set_level(TRIG, 1)`, espera ativa lendo `esp_timer_get_time()` até passarem ≥ 10 µs, e `gpio_set_level(TRIG, 0)`. A largura do eco é medida por **interrupção de GPIO** no ECHO (`GPIO_INTR_ANYEDGE`, `gpio_install_isr_service()`, `gpio_isr_handler_add()`): na borda de subida guarda `esp_timer_get_time()`; na de descida calcula a largura e libera um semáforo binário com `xSemaphoreGiveFromISR()`. A tarefa do sensor espera o semáforo com timeout de 30 ms. Distância em cm = `largura_us / 58`. **Sem eco = livre** (decisão do grupo, 19/11): se o ECHO subiu mas o timeout estourou, ou o pulso passou de 400 cm, a leitura é válida com `SENSOR_NO_ECHO_FAR_CM` (400 cm). Se o ECHO nem subiu (sensor desligado ou ECHO solto), a leitura é inválida. Se o ECHO ainda está alto na hora do disparo (pulso longo do ciclo anterior), não dispara e conta como livre por até `SENSOR_ECHO_BUSY_MAX_CYCLES` (5) ciclos; acima disso é ECHO preso, inválido.
 
 ### 8.2 Validação de pacote (RF06)
 
@@ -262,7 +262,7 @@ Sinais usados:
 - `link_ok`: `now − last_rx_ms ≤ 300 ms`.
 - `centered`: último comando válido com x = 0 e y = 0.
 - `obstacle`: leitura válida ≤ 15 cm, **ou** sensor inválido. Sai com histerese: leitura válida > 20 cm **e** 3 leituras válidas seguidas.
-- Sensor inválido: 3 ciclos seguidos sem eco ou fora de faixa (< 2 cm ou > 400 cm). Volta a válido com 3 leituras válidas seguidas.
+- Sensor inválido: 3 ciclos seguidos sem resposta do sensor (ECHO não sobe ou preso) ou fora de faixa (< 2 cm ou > 400 cm). Volta a válido com 3 leituras válidas seguidas.
 
 | De | Para | Condição |
 | --- | --- | --- |
@@ -368,7 +368,7 @@ Observação para o T2: a distância final depende da velocidade máxima e do pe
 
 - **Só ADC1** em qualquer leitura analógica (o ADC2 é compartilhado com o Wi-Fi).
 - Evitar pinos de strapping (GPIO 0, 2, 5, 12, 15) para saídas de potência no carrinho.
-- Sem leitura de eco conta como **sensor inválido** e bloqueia o avanço (RF04). Em espaço aberto sem nada a menos de ~4 m o eco pode não voltar e o carrinho ficaria bloqueado. Para os testes, usar ambiente com anteparo ao alcance. **[CONFIRMAR]** se o grupo trata "sem eco" como inválido (proposta) ou como "livre".
+- **Sem eco = livre** (decidido pelo grupo em 19/11, no lugar de "inválido" da proposta): em espaço aberto, sem nada a menos de ~4 m, o carrinho continua andando. Continua **sensor inválido** (bloqueia o avanço, RF04) quando o ECHO nem sobe após o disparo ou fica preso em nível alto (seção 8.1).
 - Nada de bloqueio, alocação dinâmica ou `printf` pesado no laço de controle, nos callbacks de ESP-NOW nem na ISR de GPIO.
 - Sem `float` em log (Picolibc). Usar `PRIu32` e afins.
 - Em qualquer reinício do carrinho, motores começam parados e o estado começa em INIT.

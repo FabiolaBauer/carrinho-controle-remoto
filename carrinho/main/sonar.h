@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 typedef struct {
-    uint16_t distance_cm;  /**< Distância medida em cm (0xFFFF se sem eco) */
+    uint16_t distance_cm;  /**< Distância em cm (SENSOR_NO_ECHO_FAR_CM se nada no alcance; 0xFFFF se o sensor não respondeu) */
     bool     echo_ok;      /**< Indica se houve eco válido */
     uint32_t timestamp_ms; /**< Timestamp da leitura em ms */
 } sonar_reading_t;

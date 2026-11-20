@@ -18,6 +18,8 @@ static SemaphoreHandle_t s_echo_sem = NULL;
 static QueueHandle_t s_sonar_out_queue = NULL;
 static volatile int64_t s_echo_start_us = 0;
 static volatile uint32_t s_echo_width_us = 0;
+/* true quando o ECHO subiu depois do último disparo: o sensor respondeu */
+static volatile bool s_echo_started = false;
 
 static void IRAM_ATTR echo_isr_handler(void *arg)
 {
@@ -25,7 +27,8 @@ static void IRAM_ATTR echo_isr_handler(void *arg)
     int level = gpio_get_level(CAR_PIN_HCSR04_ECHO);
     if (level == 1) {
         s_echo_start_us = esp_timer_get_time();
-    } else {
+        s_echo_started = true;
+    } else if (s_echo_started) {
         int64_t now_us = esp_timer_get_time();
         if (now_us > s_echo_start_us) {
             s_echo_width_us = (uint32_t)(now_us - s_echo_start_us);
@@ -46,10 +49,36 @@ static void sonar_task(void *pvParameters)
     /* Período fixo de SENSOR_PERIOD_MS (Seção 8.1), independente do tempo de
      * espera do eco. xTaskDelayUntil substitui vTaskDelayUntil no v6. */
     TickType_t last_wake = xTaskGetTickCount();
+    uint32_t busy_cycles = 0;   /* ciclos seguidos com o ECHO ainda alto antes do disparo */
 
     while (1) {
+        sonar_reading_t reading;
+        reading.timestamp_ms = (uint32_t)(esp_timer_get_time() / 1000);
+
+        /* ECHO ainda alto: pulso longo do ciclo anterior (nada no alcance;
+         * alguns módulos seguram o ECHO por até ~200 ms). Não dispara e conta
+         * como livre. Alto por mais de SENSOR_ECHO_BUSY_MAX_CYCLES ciclos
+         * seguidos = ECHO preso, tratado como sensor inválido. */
+        if (gpio_get_level(CAR_PIN_HCSR04_ECHO) == 1) {
+            busy_cycles++;
+            if (busy_cycles <= SENSOR_ECHO_BUSY_MAX_CYCLES) {
+                reading.distance_cm = SENSOR_NO_ECHO_FAR_CM;
+                reading.echo_ok = true;
+            } else {
+                reading.distance_cm = PROTO_DIST_INVALID;
+                reading.echo_ok = false;
+            }
+            if (s_sonar_out_queue != NULL) {
+                xQueueOverwrite(s_sonar_out_queue, &reading);
+            }
+            xTaskDelayUntil(&last_wake, pdMS_TO_TICKS(SENSOR_PERIOD_MS));
+            continue;
+        }
+        busy_cycles = 0;
+
         /* Garante que o semáforo está limpo antes do disparo */
         xSemaphoreTake(s_echo_sem, 0);
+        s_echo_started = false;
 
         /* Pulso de TRIG sem esp_rom_delay_us (API interna no v6.1, RNF05) */
         int64_t t0 = esp_timer_get_time();
@@ -59,15 +88,22 @@ static void sonar_task(void *pvParameters)
         }
         gpio_set_level(CAR_PIN_HCSR04_TRIG, 0);
 
-        /* Aguarda eco com timeout de SENSOR_ECHO_TIMEOUT_MS; estourou = sem eco */
-        sonar_reading_t reading;
-        reading.timestamp_ms = (uint32_t)(esp_timer_get_time() / 1000);
-
+        /* Aguarda a descida do ECHO com timeout de SENSOR_ECHO_TIMEOUT_MS */
         if (xSemaphoreTake(s_echo_sem, pdMS_TO_TICKS(SENSOR_ECHO_TIMEOUT_MS)) == pdTRUE) {
-            reading.distance_cm = (uint16_t)(s_echo_width_us / HCSR04_US_PER_CM);
+            uint32_t width_us = s_echo_width_us;
+            if (width_us > (uint32_t)SENSOR_VALID_MAX_CM * HCSR04_US_PER_CM) {
+                /* Pulso mais longo que o alcance: nada no alcance, livre */
+                reading.distance_cm = SENSOR_NO_ECHO_FAR_CM;
+            } else {
+                reading.distance_cm = (uint16_t)(width_us / HCSR04_US_PER_CM);
+            }
+            reading.echo_ok = true;
+        } else if (s_echo_started) {
+            /* O ECHO subiu, mas o eco não voltou a tempo: nada no alcance, livre */
+            reading.distance_cm = SENSOR_NO_ECHO_FAR_CM;
             reading.echo_ok = true;
         } else {
-            /* Timeout: sem eco */
+            /* O ECHO nem subiu: sensor desligado ou mal ligado (inválido, RF04) */
             reading.distance_cm = PROTO_DIST_INVALID;
             reading.echo_ok = false;
         }
