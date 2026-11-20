@@ -69,8 +69,17 @@ static void ui_task(void *arg)
 #if CONFIG_CTRL_LED_JOYSTICK
     uint32_t last_joy_log_ms = start_ms;
 #endif
+    bool last_button = joy_button_pressed();
+    ESP_LOGI(TAG, "botao SW: %s no boot", last_button ? "APERTADO" : "solto");
 
     while (1) {
+        /* Log do botão SW (buzina) só na mudança */
+        bool button = joy_button_pressed();
+        if (button != last_button) {
+            ESP_LOGI(TAG, "botao SW: %s", button ? "APERTADO" : "solto");
+            last_button = button;
+        }
+
         /* Espera telemetria por até CTRL_UI_PERIOD_MS, depois esvazia a fila */
         telem_rx_t item;
         TickType_t wait = pdMS_TO_TICKS(CTRL_UI_PERIOD_MS);
