@@ -76,7 +76,7 @@ void car_sm_step(car_sm_t *sm, const car_inputs_t *in, car_outputs_t *out)
             sm->consecutive_clear_cnt = 0;
         }
 
-        /* Determinação do flag de obstáculo com histerese (25 cm / 30 cm) */
+        /* Determinação do flag de obstáculo com histerese */
         if (!sm->sensor_valid) {
             sm->obstacle = true;
         } else {

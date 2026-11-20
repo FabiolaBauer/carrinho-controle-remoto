@@ -535,7 +535,7 @@ void test_state_machine(void)
     TEST_ASSERT_EQUAL(ST_PARADO, sm.state);
     TEST_ASSERT_TRUE(out.brake_immediate);
 
-    // Histerese de Obstáculo (25 cm / 30 cm)
+    // Histerese de Obstáculo (5 cm / 10 cm)
     // Coloca em movimento
     in.cmd_x = 0;
     in.cmd_y = 50;
