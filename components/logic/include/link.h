@@ -26,7 +26,7 @@ typedef enum {
     LINK_ERR_TYPE,          /**< Tipo diferente de PKT_CMD */
     LINK_ERR_CRC,           /**< Falha no cálculo do CRC-8 */
     LINK_ERR_SEQ,           /**< Número de sequência antigo ou repetido */
-    LINK_ERR_RANGE          /**< Eixo x ou y fora do intervalo -100..100 */
+    LINK_ERR_RANGE          /**< Eixo x ou y fora de -100..100, ou bit de botão desconhecido */
 } link_verdict_t;
 
 typedef struct {

@@ -1,4 +1,4 @@
-idf_component_register(SRCS "main.c" "motors.c" "sonar.c" "battery.c" "bench.c"
+idf_component_register(SRCS "main.c" "motors.c" "sonar.c" "battery.c" "bench.c" "buzzer.c"
                        INCLUDE_DIRS "."
                        REQUIRES logic protocol
                        PRIV_REQUIRES esp_wifi esp_netif esp_event nvs_flash esp_adc

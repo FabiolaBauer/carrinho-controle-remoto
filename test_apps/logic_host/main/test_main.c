@@ -186,6 +186,7 @@ void test_crc8(void)
     pkt.seq = 1;
     pkt.x = 25;
     pkt.y = 50;
+    pkt.buttons = 0;
     pkt.crc = crc8_calc((const uint8_t *)&pkt, sizeof(cmd_packet_t) - 1);
 
     // Validação correta
@@ -218,6 +219,7 @@ void test_link_validation(void)
     pkt.seq = 100;
     pkt.x = 20;
     pkt.y = 40;
+    pkt.buttons = 0;
     pkt.crc = crc8_calc((const uint8_t *)&pkt, sizeof(cmd_packet_t) - 1);
 
     TEST_ASSERT_EQUAL(LINK_OK, link_check_cmd(&rx, mac_expected, (const uint8_t *)&pkt, sizeof(pkt), 10, &out));
@@ -308,8 +310,35 @@ static cmd_packet_t make_cmd(uint16_t seq, int8_t x, int8_t y)
     p.seq = seq;
     p.x = x;
     p.y = y;
+    p.buttons = 0;
     p.crc = crc8_calc((const uint8_t *)&p, sizeof(cmd_packet_t) - 1);
     return p;
+}
+
+/* Botões (buzina): bit PROTO_BTN_HORN aceito e repassado; bit desconhecido rejeitado */
+void test_link_buttons(void)
+{
+    link_rx_t rx;
+    uint8_t mac[6] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
+    cmd_packet_t out;
+    link_init(&rx, mac, 0);
+
+    cmd_packet_t p = make_cmd(1, 0, 0);
+    p.buttons = PROTO_BTN_HORN;
+    p.crc = crc8_calc((const uint8_t *)&p, sizeof(cmd_packet_t) - 1);
+    TEST_ASSERT_EQUAL(LINK_OK, link_check_cmd(&rx, mac, (const uint8_t *)&p, sizeof(p), 10, &out));
+    TEST_ASSERT_EQUAL_HEX8(PROTO_BTN_HORN, out.buttons);
+
+    uint16_t rej = rx.rejected_cnt;
+    p = make_cmd(2, 0, 0);
+    p.buttons = 0x80;   /* bit fora de PROTO_BTN_MASK */
+    p.crc = crc8_calc((const uint8_t *)&p, sizeof(cmd_packet_t) - 1);
+    TEST_ASSERT_EQUAL(LINK_ERR_RANGE, link_check_cmd(&rx, mac, (const uint8_t *)&p, sizeof(p), 20, &out));
+    TEST_ASSERT_EQUAL_UINT16(rej + 1, rx.rejected_cnt);
+
+    /* Pacote no tamanho antigo (sem o campo buttons) é rejeitado */
+    p = make_cmd(3, 0, 0);
+    TEST_ASSERT_EQUAL(LINK_ERR_SIZE, link_check_cmd(&rx, mac, (const uint8_t *)&p, sizeof(p) - 1, 30, &out));
 }
 
 /* Boot sem controle (A.1 item 8): enlace perdido aos 300 ms contados do boot */
@@ -982,6 +1011,7 @@ static void run_all_tests(void)
     RUN_TEST(test_link_validation);
     RUN_TEST(test_link_boot_without_controller);
     RUN_TEST(test_link_controller_restart);
+    RUN_TEST(test_link_buttons);
     RUN_TEST(test_sm_boot_without_controller);
     RUN_TEST(test_sm_slow_wifi_boot);
     RUN_TEST(test_sm_controller_restart);

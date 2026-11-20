@@ -19,6 +19,9 @@
 #define PROTO_AXIS_MAX      100      /**< Valor máximo de x e y */
 #define PROTO_DIST_INVALID  0xFFFF   /**< distance_cm quando o sensor está inválido */
 
+#define PROTO_BTN_HORN      0x01     /**< cmd_packet_t.buttons: botão do joystick apertado (buzina) */
+#define PROTO_BTN_MASK      (PROTO_BTN_HORN)  /**< Bits de botão conhecidos; os outros devem ser 0 */
+
 /**
  * @brief Tipos de pacotes
  */
@@ -47,6 +50,7 @@ typedef struct __attribute__((packed)) {
     uint16_t seq;   /**< Número de sequência crescente (com wraparound) */
     int8_t   x;     /**< Direção / giro: -100..100 (+ = direita) */
     int8_t   y;     /**< Sentido / aceleração: -100..100 (+ = frente, - = ré) */
+    uint8_t  buttons; /**< Bits de botão (PROTO_BTN_*); bits fora de PROTO_BTN_MASK = 0 */
     uint8_t  crc;   /**< CRC-8 de todos os bytes anteriores */
 } cmd_packet_t;
 

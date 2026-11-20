@@ -7,6 +7,7 @@
 #include "config.h"
 #include "joystick.h"
 #include "esp_adc/adc_oneshot.h"
+#include "driver/gpio.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -144,6 +145,25 @@ esp_err_t joy_read(int8_t *x, int8_t *y)
     s_last_x = *x;
     s_last_y = *y;
     return ESP_OK;
+}
+
+esp_err_t joy_button_init(void)
+{
+    gpio_config_t io = {
+        .pin_bit_mask = (1ULL << CTRL_PIN_JOY_BUTTON),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,     /* SW do módulo fecha para GND */
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    ESP_ERROR_CHECK(gpio_config(&io));
+    ESP_LOGI(TAG, "Botao SW no GPIO %d (ativo em 0)", CTRL_PIN_JOY_BUTTON);
+    return ESP_OK;
+}
+
+bool joy_button_pressed(void)
+{
+    return gpio_get_level(CTRL_PIN_JOY_BUTTON) == 0;
 }
 
 uint32_t joy_read_fail_count(void)

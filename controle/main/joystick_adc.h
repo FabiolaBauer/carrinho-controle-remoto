@@ -7,6 +7,7 @@
 #define JOYSTICK_ADC_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "esp_err.h"
 
 #ifdef __cplusplus
@@ -38,6 +39,15 @@ void joy_calibrate(void);
  * devolve x = y = 0 (neutro, seguro) e ESP_FAIL.
  */
 esp_err_t joy_read(int8_t *x, int8_t *y);
+
+/**
+ * @brief Configura o botão SW do joystick (CTRL_PIN_JOY_BUTTON) como entrada
+ *        com pull-up interno. O botão fecha para GND quando apertado.
+ */
+esp_err_t joy_button_init(void);
+
+/** @brief true com o botão SW apertado (nível 0). Não bloqueia. */
+bool joy_button_pressed(void);
 
 /** @brief Leituras com falha desde o boot (diagnóstico) */
 uint32_t joy_read_fail_count(void);

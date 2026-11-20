@@ -62,6 +62,14 @@ Todos os pinos estão em `components/logic/include/config.h`.
 | HC-SR04 ECHO | 18 | `CAR_PIN_HCSR04_ECHO` | **Eco é 5 V: usar divisor resistivo** (máx. 3,3 V no ESP32) |
 | Tensão da bateria | 34 | `CAR_PIN_BATT_ADC` | ADC1, via divisor (`BATT_DIV_RATIO_X1000`) |
 | DEBUG_PIN (analisador lógico) | 23 | `CAR_PIN_DEBUG` | Ver seção 8 |
+| Buzzer (buzina) | 19 | `CAR_PIN_BUZZER` | Tom de 2 kHz por PWM (`CAR_BUZZER_FREQ_HZ`). Ver ligação abaixo |
+
+**Buzina:** enquanto o botão SW do joystick está apertado, o controle manda o bit `PROTO_BTN_HORN` no `cmd_packet_t` e o carrinho toca o buzzer. Toca em qualquer estado e desliga sozinha se o enlace cair. O log do carrinho mostra `EVT horn_on` / `EVT horn_off`.
+
+Ligação do buzzer passivo:
+- **Piezo** (disco ou cápsula fina, sem polaridade): GPIO 19 → resistor de 100 Ω → buzzer → GND. Pode ser ligado em qualquer sentido.
+- **Magnético** (cápsula preta com bobina, uns 16 a 42 Ω): **não ligue direto no GPIO**, a corrente passa do limite do pino. Use um transistor NPN (BC547, 2N2222): GPIO 19 → resistor de 1 kΩ → base; emissor no GND; coletor → buzzer → 3V3 ou 5 V. Coloque um diodo (1N4148) em paralelo com o buzzer, catodo no lado do +. Se o buzzer não tiver marcação, qualquer sentido funciona.
+- **Módulo de 3 pinos** (VCC, GND, I/O): VCC em 3V3, GND no GND e I/O no GPIO 19. O módulo já tem o transistor.
 
 ### 3.2 Controle (ESP32 #1)
 
@@ -71,7 +79,7 @@ Todos os pinos estão em `components/logic/include/config.h`.
 | VRy (eixo Y) | GPIO 35 | `CTRL_PIN_JOYSTICK_Y` | ADC1 |
 | +5V / VCC | **3V3** do ESP32 | | **Não ligue em 5 V**: a saída do potenciômetro iria a 5 V no pino do ADC |
 | GND | GND | | |
-| SW (botão) | não ligado | | Não usado |
+| SW (botão) | GPIO 32 | `CTRL_PIN_JOY_BUTTON` | Buzina. Pull-up interno; o botão fecha para GND |
 | LED de estado | GPIO 2 | `CTRL_PIN_LED` | LED da própria placa |
 
 Só o ADC1 é usado, porque o ADC2 é compartilhado com o Wi-Fi. O firmware confere no boot que os dois pinos estão no ADC1 e para com erro se não estiverem.
@@ -293,7 +301,7 @@ Os passos 4 e 5 são comandos legítimos e **não** contam em `rejected_cnt`. El
 
 ## 10. Testes unitários (seção 9.1)
 
-São 21 testes em `test_apps/logic_host/main/test_main.c`:
+São 22 testes em `test_apps/logic_host/main/test_main.c`:
 - normalização e zona morta;
 - mistura;
 - rampa;
@@ -305,6 +313,7 @@ São 21 testes em `test_apps/logic_host/main/test_main.c`:
 - histerese 15/20 cm;
 - sensor inválido e recuperação;
 - validação da telemetria no controle;
+- bit da buzina no pacote de comando;
 - padrão do LED do controle.
 
 ### 10.1 Rodando no PC (foi o que rodou de fato)

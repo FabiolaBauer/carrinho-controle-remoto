@@ -53,6 +53,8 @@ static void send_timer_cb(void *arg)
     pkt.seq = s_seq++;        /* incrementa a cada pacote, com wraparound */
     pkt.x = x;
     pkt.y = y;
+    /* Botão SW lido a cada envio (20 Hz): o próprio período filtra o repique */
+    pkt.buttons = joy_button_pressed() ? PROTO_BTN_HORN : 0;
     pkt.crc = crc8_calc((const uint8_t *)&pkt, sizeof(pkt) - 1);
 
 #if CONFIG_FW_TEST_T4
@@ -91,6 +93,7 @@ void app_main(void)
 
     /* 3. ADC e calibração do centro (joystick em repouso) */
     ESP_ERROR_CHECK(joy_adc_init());
+    ESP_ERROR_CHECK(joy_button_init());
     joy_calibrate();
 
     /* 4. UI: telemetria, log e LED */

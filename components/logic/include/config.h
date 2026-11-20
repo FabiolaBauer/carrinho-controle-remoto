@@ -104,6 +104,11 @@ _Static_assert((BATT_PERIOD_MS % CONTROL_PERIOD_MS) == 0, "BATT_PERIOD_MS deve s
 #define CAR_PIN_HCSR04_ECHO     18      /**< HC-SR04 ECHO (Entrada com interrupção, nível 3,3V via divisor) */
 #define CAR_PIN_BATT_ADC        34      /**< Tensão da bateria (ADC1 Canal 6) */
 #define CAR_PIN_DEBUG           23      /**< Pino para osciloscópio / analisador lógico (Seção 8.6) */
+#define CAR_PIN_BUZZER          19      /**< Buzzer (buzina): PWM pelo LEDC */
+
+/* Buzzer (buzina) */
+#define CAR_BUZZER_FREQ_HZ      2000    /**< Frequência do tom do buzzer passivo */
+#define CAR_BUZZER_DUTY_PCT     50      /**< Duty do PWM do buzzer (onda quadrada) */
 
 /* =========================================================================
  * Pinagem do Controle (ESP32 #1) [CONFIRMAR]
@@ -111,6 +116,7 @@ _Static_assert((BATT_PERIOD_MS % CONTROL_PERIOD_MS) == 0, "BATT_PERIOD_MS deve s
 #define CTRL_PIN_JOYSTICK_X     34      /**< ADC1 */
 #define CTRL_PIN_JOYSTICK_Y     35      /**< ADC1 */
 #define CTRL_PIN_LED            2       /**< LED de estado onboard */
+#define CTRL_PIN_JOY_BUTTON     32      /**< Botão SW do joystick (ativo em 0, pull-up interno) */
 
 /* =========================================================================
  * Parâmetros do Controle (Seção 7)

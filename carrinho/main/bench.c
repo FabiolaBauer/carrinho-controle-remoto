@@ -66,6 +66,7 @@ static void bench_task(void *pvParameters)
                 pkt.seq = seq++;
                 pkt.x = step->x;
                 pkt.y = step->y;
+                pkt.buttons = 0;
                 pkt.crc = crc8_calc((const uint8_t *)&pkt, sizeof(cmd_packet_t) - 1);
 
                 /* Empacota como rx_packet_t para a mesma fila do ESP-NOW */

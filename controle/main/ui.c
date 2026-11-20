@@ -104,6 +104,8 @@ static void ui_task(void *arg)
 
 #if CONFIG_CTRL_LED_JOYSTICK
         /* Diagnóstico: LED aceso com o joystick fora do centro (x ou y != 0) */
+        (void)has_telem;    /* o LED não mostra o estado neste build */
+        (void)last_state;
         int8_t jx = 0, jy = 0;
         joy_last_values(&jx, &jy);
         gpio_set_level(CTRL_PIN_LED, (jx != 0 || jy != 0) ? 1 : 0);

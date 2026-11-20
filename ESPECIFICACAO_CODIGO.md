@@ -47,7 +47,7 @@ Itens marcados com **[CONFIRMAR]** são valores propostos (pinos, limiares) que 
 | --- | --- |
 | Y | Frente (+) e ré (−). Centro = parado |
 | X | Direita (+) e esquerda (−) |
-| Botão (SW) | **Não usado** |
+| Botão (SW) | Buzina: enquanto apertado, o buzzer do carrinho toca (bit `PROTO_BTN_HORN`) |
 
 ## 2. Requisitos (rastreabilidade com a proposta)
 
@@ -144,7 +144,7 @@ void car_sm_step(car_sm_t *sm, const car_inputs_t *in, car_outputs_t *out);     
 | Joystick eixo Y (VRy) | 35 | ADC1. |
 | LED de estado | 2 | LED onboard. |
 
-O pino de botão do joystick (SW) **não é usado**. Usar **só ADC1**: o ADC2 é compartilhado com o Wi-Fi e a leitura pode retornar `ESP_ERR_TIMEOUT`.
+O botão SW do joystick vai no **GPIO 32** (entrada com pull-up interno, ativo em 0). Usar **só ADC1** nos eixos: o ADC2 é compartilhado com o Wi-Fi e a leitura pode retornar `ESP_ERR_TIMEOUT`.
 
 ### 5.2 Carrinho (ESP32 #2) **[CONFIRMAR]**
 
@@ -157,6 +157,7 @@ O pino de botão do joystick (SW) **não é usado**. Usar **só ADC1**: o ADC2 �
 | HC-SR04 TRIG | 4 | |
 | HC-SR04 ECHO | 18 | **5 V: passar por divisor resistivo** antes do ESP32 (3,3 V máx.). |
 | Tensão da bateria (ADC) | 34 | ADC1, via divisor resistivo. |
+| Buzzer (buzina) | 19 | PWM do LEDC (`LEDC_TIMER_1`, canal 2), tom de 2 kHz. Buzzer magnético: ligar por transistor. |
 
 Alimentação (README e desafio D1): ponte H e motores direto na bateria; os dois ESP32 e o sensor em trilho de 5 V por step-down; GND comum; capacitores de desacoplamento. Recomendado: resistores de 10 kΩ para GND em IN1 a IN4, ENA e ENB, para os motores não se moverem durante o boot. Se a ponte for TB6612, usar o mesmo mapa (PWMA/AIN1/AIN2, PWMB/BIN1/BIN2) e ligar STBY em nível alto.
 
@@ -199,6 +200,7 @@ typedef struct __attribute__((packed)) {   // controle -> carrinho, 20 Hz
   uint16_t seq;     // incrementa a cada pacote, com wraparound
   int8_t   x;       // -100..100 (+ = direita)
   int8_t   y;       // -100..100 (+ = frente)
+  uint8_t  buttons; // bit 0 = PROTO_BTN_HORN (buzina); demais bits = 0
   uint8_t  crc;     // CRC-8 de todos os bytes anteriores
 } cmd_packet_t;
 
@@ -251,7 +253,7 @@ O callback ESP-NOW só copia `{origem, dados, tamanho, rx_ms}` para uma fila (pr
 
 1. Origem diferente de `CONTROLLER_MAC`, tamanho ≠ `sizeof(cmd_packet_t)`, `magic` ou `type` errados, CRC errado → descartar. **Não** renova o temporizador de enlace.
 2. Sequência antiga ou repetida: aceitar só se `(int16_t)(seq − last_seq) > 0`; o primeiro pacote após boot sempre é aceito. Descartar, sem renovar o enlace.
-3. `x` ou `y` fora de −100..100 → descartar, sem renovar o enlace.
+3. `x` ou `y` fora de −100..100, ou bit de `buttons` fora de `PROTO_BTN_MASK` → descartar, sem renovar o enlace.
 4. Pacote válido: atualizar `last_seq` e `last_rx_ms`. A **regra de comando por estado** (8.3) decide se o comando é usado ou rejeitado (também conta em `rejected_cnt`, mas o enlace segue vivo).
 
 ### 8.3 Máquina de estados

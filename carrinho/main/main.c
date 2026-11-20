@@ -32,6 +32,7 @@
 #include "sonar.h"
 #include "battery.h"
 #include "bench.h"
+#include "buzzer.h"
 
 #if !CONFIG_CAR_BENCH_MODE
 #include "esp_wifi.h"
@@ -50,7 +51,9 @@ typedef enum {
     EVT_CENTER_DETECTED,
     EVT_OBSTACLE_ENTER,
     EVT_MOTORS_ZERO,
-    EVT_TELEM_LOG
+    EVT_TELEM_LOG,
+    EVT_HORN_ON,
+    EVT_HORN_OFF
 } log_event_type_t;
 
 typedef struct {
@@ -80,6 +83,8 @@ static uint16_t s_latest_battery_mv = 0;
 static bool s_prev_link_ok = true;
 static bool s_prev_zero_state = false;
 static bool s_prev_cmd_centered = false;
+static bool s_horn_cmd = false;   /* bit PROTO_BTN_HORN do último comando aceito */
+static bool s_horn_on = false;    /* estado atual do buzzer */
 
 /* Pacotes descartados por fila cheia (Seção 8.2). Escrito SOMENTE pelo
  * produtor da fila (callback ESP-NOW); o laço de controle só lê e soma na
@@ -235,6 +240,12 @@ static void log_task(void *pvParameters)
                 case EVT_MOTORS_ZERO:
                     ESP_LOGI(TAG, "[%" PRIu32 " ms] EVT motors_zero", evt.timestamp_ms);
                     break;
+                case EVT_HORN_ON:
+                    ESP_LOGI(TAG, "[%" PRIu32 " ms] EVT horn_on", evt.timestamp_ms);
+                    break;
+                case EVT_HORN_OFF:
+                    ESP_LOGI(TAG, "[%" PRIu32 " ms] EVT horn_off", evt.timestamp_ms);
+                    break;
                 case EVT_TELEM_LOG:
                     ESP_LOGI(TAG, "[%" PRIu32 " ms] TELEM: estado=%s dist=%" PRIu16 "cm bat=%" PRIu16 "mV rej=%" PRIu16,
                              evt.timestamp_ms,
@@ -334,6 +345,18 @@ static void control_timer_cb(void *arg)
             post_log_event(EVT_CENTER_DETECTED, s_sm.state, s_sm.state, 0, 0, 0, now_ms);
         }
         s_prev_cmd_centered = centered_now;
+    }
+
+    /* Buzina: segue o botão do último comando aceito, em qualquer estado.
+     * Sem enlace, desliga (não fica tocando com o controle desligado). */
+    if (has_cmd) {
+        s_horn_cmd = (cmd.buttons & PROTO_BTN_HORN) != 0;
+    }
+    bool horn = link_ok && s_horn_cmd;
+    if (horn != s_horn_on) {
+        buzzer_set(horn);
+        s_horn_on = horn;
+        post_log_event(horn ? EVT_HORN_ON : EVT_HORN_OFF, s_sm.state, s_sm.state, 0, 0, 0, now_ms);
     }
 
     /* 3. Leitura do sensor ultrassônico da fila (tamanho 1) */
@@ -451,6 +474,7 @@ void app_main(void)
     debug_pin_init();
     ESP_ERROR_CHECK(sonar_init(s_sonar_queue));
     ESP_ERROR_CHECK(battery_init());
+    ESP_ERROR_CHECK(buzzer_init());
 
     /* Inicialização da máquina de estados, rampa e enlace.
      * boot_time_ms é gravado aqui, antes do Wi-Fi: se o controle não mandar

@@ -78,9 +78,11 @@ link_verdict_t link_check_cmd(link_rx_t *rx, const uint8_t *src_mac, const uint8
         }
     }
 
-    /* 3. Faixa de valores: x e y devem estar em -100..100 */
+    /* 3. Faixa de valores: x e y devem estar em -100..100 e só bits de
+     * botão conhecidos podem estar ligados */
     if (pkt->x < PROTO_AXIS_MIN || pkt->x > PROTO_AXIS_MAX ||
-        pkt->y < PROTO_AXIS_MIN || pkt->y > PROTO_AXIS_MAX) {
+        pkt->y < PROTO_AXIS_MIN || pkt->y > PROTO_AXIS_MAX ||
+        (pkt->buttons & (uint8_t)~PROTO_BTN_MASK) != 0) {
         rx->rejected_cnt++;
         return LINK_ERR_RANGE;
     }
