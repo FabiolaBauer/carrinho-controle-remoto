@@ -63,6 +63,7 @@ Todos os pinos estão em `components/logic/include/config.h`.
 | Tensão da bateria | 34 | `CAR_PIN_BATT_ADC` | ADC1, via divisor (`BATT_DIV_RATIO_X1000`) |
 | DEBUG_PIN (analisador lógico) | 23 | `CAR_PIN_DEBUG` | Ver seção 8 |
 | Buzzer (buzina) | 19 | `CAR_PIN_BUZZER` | Tom de 2 kHz por PWM (`CAR_BUZZER_FREQ_HZ`). Ver ligação abaixo |
+| LEDs de movimento | 21 | `CAR_PIN_MOVE_LED` | Acesos enquanto algum motor gira (frente, ré ou giro). Ver ligação abaixo |
 
 **Buzina:** enquanto o botão SW do joystick está apertado, o controle manda o bit `PROTO_BTN_HORN` no `cmd_packet_t` e o carrinho toca o buzzer. Toca em qualquer estado e desliga sozinha se o enlace cair. O log do carrinho mostra `EVT horn_on` / `EVT horn_off`.
 
@@ -70,6 +71,8 @@ Ligação do buzzer passivo:
 - **Piezo** (disco ou cápsula fina, sem polaridade): GPIO 19 → resistor de 100 Ω → buzzer → GND. Pode ser ligado em qualquer sentido.
 - **Magnético** (cápsula preta com bobina, uns 16 a 42 Ω): **não ligue direto no GPIO**, a corrente passa do limite do pino. Use um transistor NPN (BC547, 2N2222): GPIO 19 → resistor de 1 kΩ → base; emissor no GND; coletor → buzzer → 3V3 ou 5 V. Coloque um diodo (1N4148) em paralelo com o buzzer, catodo no lado do +. Se o buzzer não tiver marcação, qualquer sentido funciona.
 - **Módulo de 3 pinos** (VCC, GND, I/O): VCC em 3V3, GND no GND e I/O no GPIO 19. O módulo já tem o transistor.
+
+**LEDs de movimento:** acendem quando a saída de algum motor é diferente de zero (o mesmo momento em que o `DEBUG_PIN` vai para "girando") e apagam no `EVT motors_zero`. Ligação de cada LED: GPIO 21 → resistor de 220 Ω → anodo (perna longa) → catodo (perna curta) → GND. Vários LEDs vão em paralelo, cada um com seu resistor. O GPIO aguenta cerca de **2 LEDs**; para mais, use um transistor NPN (GPIO 21 → 1 kΩ → base, emissor no GND, coletor nos catodos, e os anodos com resistor no 3V3 ou 5 V).
 
 ### 3.2 Controle (ESP32 #1)
 

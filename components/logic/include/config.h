@@ -106,6 +106,7 @@ _Static_assert((BATT_PERIOD_MS % CONTROL_PERIOD_MS) == 0, "BATT_PERIOD_MS deve s
 #define CAR_PIN_BATT_ADC        34      /**< Tensão da bateria (ADC1 Canal 6) */
 #define CAR_PIN_DEBUG           23      /**< Pino para osciloscópio / analisador lógico (Seção 8.6) */
 #define CAR_PIN_BUZZER          19      /**< Buzzer (buzina): PWM pelo LEDC */
+#define CAR_PIN_MOVE_LED        21      /**< LEDs de movimento: acesos com algum motor girando */
 
 /* Buzzer (buzina) */
 #define CAR_BUZZER_FREQ_HZ      2000    /**< Frequência do tom do buzzer passivo */

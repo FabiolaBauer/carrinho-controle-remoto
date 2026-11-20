@@ -158,6 +158,7 @@ O botão SW do joystick vai no **GPIO 32** (entrada com pull-up interno, ativo e
 | HC-SR04 ECHO | 18 | **5 V: passar por divisor resistivo** antes do ESP32 (3,3 V máx.). |
 | Tensão da bateria (ADC) | 34 | ADC1, via divisor resistivo. |
 | Buzzer (buzina) | 19 | PWM do LEDC (`LEDC_TIMER_1`, canal 2), tom de 2 kHz. Buzzer magnético: ligar por transistor. |
+| LEDs de movimento | 21 | Nível alto enquanto a saída de algum motor ≠ 0; muda junto com o `DEBUG_PIN`. |
 
 Alimentação (README e desafio D1): ponte H e motores direto na bateria; os dois ESP32 e o sensor em trilho de 5 V por step-down; GND comum; capacitores de desacoplamento. Recomendado: resistores de 10 kΩ para GND em IN1 a IN4, ENA e ENB, para os motores não se moverem durante o boot. Se a ponte for TB6612, usar o mesmo mapa (PWMA/AIN1/AIN2, PWMB/BIN1/BIN2) e ligar STBY em nível alto.
 

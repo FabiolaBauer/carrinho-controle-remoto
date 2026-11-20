@@ -199,6 +199,22 @@ static void debug_pin_init(void)
 }
 
 /* =========================================================================
+ * LEDs de movimento: acesos enquanto algum motor gira (frente, ré ou giro)
+ * ========================================================================= */
+static void move_led_init(void)
+{
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << CAR_PIN_MOVE_LED),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    ESP_ERROR_CHECK(gpio_config(&io_conf));
+    gpio_set_level(CAR_PIN_MOVE_LED, 0);   /* parado no boot: apagado */
+}
+
+/* =========================================================================
  * Tarefa assíncrona de Log (Seção 8.6)
  * ========================================================================= */
 static const char *state_name(car_state_t st)
@@ -292,9 +308,11 @@ static void update_motors_zero(bool zero_now, car_state_t st, uint32_t now_ms)
 {
     if (zero_now && !s_prev_zero_state) {
         gpio_set_level(CAR_PIN_DEBUG, DEBUG_PIN_LEVEL_STOPPED);
+        gpio_set_level(CAR_PIN_MOVE_LED, 0);
         post_log_event(EVT_MOTORS_ZERO, st, st, 0, 0, 0, now_ms);
     } else if (!zero_now && s_prev_zero_state) {
         gpio_set_level(CAR_PIN_DEBUG, DEBUG_PIN_LEVEL_MOVING);
+        gpio_set_level(CAR_PIN_MOVE_LED, 1);
     }
     s_prev_zero_state = zero_now;
 }
@@ -472,6 +490,7 @@ void app_main(void)
     /* Inicialização dos módulos de hardware (motores começam em freio) */
     ESP_ERROR_CHECK(motors_init());
     debug_pin_init();
+    move_led_init();
     ESP_ERROR_CHECK(sonar_init(s_sonar_queue));
     ESP_ERROR_CHECK(battery_init());
     ESP_ERROR_CHECK(buzzer_init());
