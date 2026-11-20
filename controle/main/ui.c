@@ -7,6 +7,7 @@
  */
 
 #include "ui.h"
+#include "sdkconfig.h"
 #include "config.h"
 #include "protocol.h"
 #include "telem.h"
@@ -65,6 +66,9 @@ static void ui_task(void *arg)
 #if CONFIG_FW_TEST_T4
     t4_step_t logged_t4 = T4_WAIT;
 #endif
+#if CONFIG_CTRL_LED_JOYSTICK
+    uint32_t last_joy_log_ms = start_ms;
+#endif
 
     while (1) {
         /* Espera telemetria por até CTRL_UI_PERIOD_MS, depois esvazia a fila */
@@ -98,8 +102,19 @@ static void ui_task(void *arg)
             last_no_telem_log_ms = now;
         }
 
+#if CONFIG_CTRL_LED_JOYSTICK
+        /* Diagnóstico: LED aceso com o joystick fora do centro (x ou y != 0) */
+        int8_t jx = 0, jy = 0;
+        joy_last_values(&jx, &jy);
+        gpio_set_level(CTRL_PIN_LED, (jx != 0 || jy != 0) ? 1 : 0);
+        if ((now - last_joy_log_ms) >= CTRL_JOY_LOG_MS) {
+            ESP_LOGI(TAG, "joystick: x=%d y=%d", (int)jx, (int)jy);
+            last_joy_log_ms = now;
+        }
+#else
         /* LED de estado (Seção 7, item 7) */
         gpio_set_level(CTRL_PIN_LED, led_pattern_level(has_telem, last_state, now) ? 1 : 0);
+#endif
 
         if ((now - last_stats_ms) >= CTRL_STATS_LOG_MS) {
             log_stats(invalid_telem);

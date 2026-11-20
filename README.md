@@ -124,7 +124,13 @@ idf.py -p COMy flash monitor
 # Build do teste T4: pasta e sdkconfig próprios
 idf.py -B build_t4 -D SDKCONFIG=build_t4/sdkconfig -D "SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.defaults.t4" build
 idf.py -B build_t4 -D SDKCONFIG=build_t4/sdkconfig -p COMy flash monitor
+
+# Build de diagnóstico do joystick: pasta e sdkconfig próprios
+idf.py -B build_joy -D SDKCONFIG=build_joy/sdkconfig -D "SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.defaults.joyled" build
+idf.py -B build_joy -D SDKCONFIG=build_joy/sdkconfig -p COMy flash monitor
 ```
+
+- **Build de diagnóstico do joystick** (`CONFIG_CTRL_LED_JOYSTICK=y`): o LED (GPIO 2) acende quando o x ou o y enviados são diferentes de 0, ou seja, com o joystick fora da zona morta, e o log mostra `joystick: x=... y=...` a cada 500 ms. Nesse build o LED **não** mostra o estado do carrinho. Com o joystick solto, o LED tem que ficar apagado e o log tem que mostrar `x=0 y=0`.
 
 ### 4.3 Gravando as duas placas
 

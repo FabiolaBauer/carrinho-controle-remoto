@@ -5,4 +5,13 @@ menu "Controle"
         help
             Build de teste do RF06 (secao 7, item 8). Ligado por
             sdkconfig.defaults.t4. Fora desse build o codigo do T4 nao existe.
+
+    config CTRL_LED_JOYSTICK
+        bool "Diagnostico: LED acende com o joystick fora do centro"
+        default n
+        help
+            Build de diagnostico do joystick. O LED (GPIO 2) acende quando
+            o x ou o y enviados sao diferentes de 0 (fora da zona morta), no
+            lugar do padrao de estado do carrinho, e o log mostra x/y a cada
+            CTRL_JOY_LOG_MS. Ligado por sdkconfig.defaults.joyled.
 endmenu

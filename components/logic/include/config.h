@@ -127,6 +127,7 @@ _Static_assert((BATT_PERIOD_MS % CONTROL_PERIOD_MS) == 0, "BATT_PERIOD_MS deve s
 #define CTRL_TELEM_LOST_MS      1000    /**< Sem telemetria por mais que isso = "SEM TELEMETRIA" */
 #define CTRL_NO_TELEM_LOG_MS    1000    /**< Período do log "SEM TELEMETRIA" */
 #define CTRL_STATS_LOG_MS       10000   /**< Período do log de estatísticas de envio */
+#define CTRL_JOY_LOG_MS         500     /**< Período do log de x/y no build CTRL_LED_JOYSTICK */
 #define CTRL_UI_PERIOD_MS       10      /**< Período da tarefa de UI (resolução do LED) */
 #define CTRL_UI_TASK_STACK      3072    /**< Pilha da tarefa de UI, em bytes */
 #define CTRL_UI_TASK_PRIO       3       /**< Prioridade da tarefa de UI */

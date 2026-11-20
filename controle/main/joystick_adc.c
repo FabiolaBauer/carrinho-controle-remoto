@@ -20,6 +20,8 @@ static adc_channel_t s_ch_y;
 static int s_center_x = (ADC_RAW_MAX + 1) / 2;   /* substituído pela calibração */
 static int s_center_y = (ADC_RAW_MAX + 1) / 2;
 static volatile uint32_t s_read_fail_cnt = 0;    /* escrito só por quem lê o ADC */
+static volatile int8_t s_last_x = 0;             /* escritos só por joy_read() */
+static volatile int8_t s_last_y = 0;
 
 esp_err_t joy_adc_init(void)
 {
@@ -127,6 +129,8 @@ esp_err_t joy_read(int8_t *x, int8_t *y)
         s_read_fail_cnt++;
         *x = 0;   /* neutro: o carrinho para (RF03) */
         *y = 0;
+        s_last_x = 0;
+        s_last_y = 0;
         return ESP_FAIL;
     }
 
@@ -137,10 +141,18 @@ esp_err_t joy_read(int8_t *x, int8_t *y)
     /* Zona morta de DEADZONE_PCT com reescala contínua (RF02) */
     *x = joystick_deadzone(nx, DEADZONE_PCT);
     *y = joystick_deadzone(ny, DEADZONE_PCT);
+    s_last_x = *x;
+    s_last_y = *y;
     return ESP_OK;
 }
 
 uint32_t joy_read_fail_count(void)
 {
     return s_read_fail_cnt;
+}
+
+void joy_last_values(int8_t *x, int8_t *y)
+{
+    *x = s_last_x;
+    *y = s_last_y;
 }

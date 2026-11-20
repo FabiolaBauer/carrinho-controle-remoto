@@ -42,6 +42,13 @@ esp_err_t joy_read(int8_t *x, int8_t *y);
 /** @brief Leituras com falha desde o boot (diagnóstico) */
 uint32_t joy_read_fail_count(void);
 
+/**
+ * @brief Últimos x e y devolvidos por joy_read() (diagnóstico)
+ *
+ * Escritos só por joy_read(); pode ser lida por outra tarefa.
+ */
+void joy_last_values(int8_t *x, int8_t *y);
+
 #ifdef __cplusplus
 }
 #endif
