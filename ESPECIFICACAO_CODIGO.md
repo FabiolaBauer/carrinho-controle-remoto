@@ -58,7 +58,7 @@ Numeração e texto seguem a proposta v2 (1 joystick + ponte H, de 08/11). **[CO
 | RF01 | O controle envia o estado do joystick por ESP-NOW a 20 Hz, com número de sequência. |
 | RF02 | Eixo Y define frente, ré e parada (centro); eixo X define direita/esquerda; o ESP32 do carrinho mistura os eixos e aplica PWM e sentido a cada motor. Zona morta de 10% nos eixos. |
 | RF03 | Com o joystick no neutro (zona morta), os motores ficam parados. |
-| RF04 | Com obstáculo a 5 cm ou menos, ou sensor sem leitura válida, o carrinho bloqueia o avanço. |
+| RF04 | Com obstáculo a 15 cm ou menos, ou sensor sem leitura válida, o carrinho bloqueia o avanço. |
 | RF05 | Sem pacote válido por mais de 300 ms, o carrinho para. |
 | RF06 | Comandos fora de faixa, vencidos ou incompatíveis com o estado são rejeitados. |
 | RF07 | Após uma falha, o carrinho só retoma com o joystick no centro. |
@@ -261,7 +261,7 @@ Estados: `ST_INIT, ST_PARADO, ST_OPERANDO, ST_OBSTACULO, ST_FALHA_COM`.
 Sinais usados:
 - `link_ok`: `now − last_rx_ms ≤ 300 ms`.
 - `centered`: último comando válido com x = 0 e y = 0.
-- `obstacle`: leitura válida ≤ 5 cm, **ou** sensor inválido. Sai com histerese: leitura válida > 10 cm **e** 3 leituras válidas seguidas.
+- `obstacle`: leitura válida ≤ 15 cm, **ou** sensor inválido. Sai com histerese: leitura válida > 20 cm **e** 3 leituras válidas seguidas.
 - Sensor inválido: 3 ciclos seguidos sem eco ou fora de faixa (< 2 cm ou > 400 cm). Volta a válido com 3 leituras válidas seguidas.
 
 | De | Para | Condição |
@@ -322,7 +322,7 @@ Obrigatórios:
 - CRC-8: vetores conhecidos e pacote com 1 bit trocado rejeitado.
 - Sequência: crescente aceita; repetida e antiga rejeitadas; wraparound 65535→0 aceito; primeiro pacote aceito.
 - Validação: `x = 120` e `y = −120` rejeitados.
-- Máquina de estados: todas as transições da tabela 8.3; FALHA_COM aos 300 ms sem pacote e **não** aos 299 ms; saída de FALHA_COM e de OBSTACULO só com `centered`; avanço bloqueado em OBSTACULO e ré liberada; histerese 5/10 cm; sensor inválido após 3 ciclos e recuperado após 3 leituras válidas; boot sem controle vai a FALHA_COM; boot com joystick fora do centro só arma depois do neutro.
+- Máquina de estados: todas as transições da tabela 8.3; FALHA_COM aos 300 ms sem pacote e **não** aos 299 ms; saída de FALHA_COM e de OBSTACULO só com `centered`; avanço bloqueado em OBSTACULO e ré liberada; histerese 15/20 cm; sensor inválido após 3 ciclos e recuperado após 3 leituras válidas; boot sem controle vai a FALHA_COM; boot com joystick fora do centro só arma depois do neutro.
 
 ### 9.2 Aceitação em bancada
 
@@ -335,7 +335,7 @@ Obrigatórios:
 | T5 | RF04 (sensor inválido) | Desconectar o sensor com o carrinho em avanço. | Avanço bloqueado em ≤ 500 ms; recupera ao reconectar (e joystick no centro). |
 | T6 | RF03, RNF04 | Em movimento, soltar o joystick e medir da entrada na zona morta até parar. 10 repetições. | ≤ 300 ms em 10 de 10. |
 
-Observação para o T2: a distância final depende da velocidade máxima e do período do sensor (60 ms); `OBSTACLE_ENTER_CM` (5), `OBSTACLE_EXIT_CM` (10) e `MAX_PWM_PCT` ficam em `config.h` para ajuste depois da primeira medição.
+Observação para o T2: a distância final depende da velocidade máxima e do período do sensor (60 ms); `OBSTACLE_ENTER_CM` (15), `OBSTACLE_EXIT_CM` (20) e `MAX_PWM_PCT` ficam em `config.h` para ajuste depois da primeira medição.
 
 ## 10. Parâmetros de `config.h` (valores padrão)
 
@@ -350,8 +350,8 @@ Observação para o T2: a distância final depende da velocidade máxima e do pe
 #define CONTROL_PERIOD_MS       10
 #define SENSOR_PERIOD_MS        60
 #define SENSOR_ECHO_TIMEOUT_MS  30
-#define OBSTACLE_ENTER_CM       5
-#define OBSTACLE_EXIT_CM        10
+#define OBSTACLE_ENTER_CM       15
+#define OBSTACLE_EXIT_CM        20
 #define SENSOR_VALID_MIN_CM     2
 #define SENSOR_VALID_MAX_CM     400
 #define SENSOR_FAIL_CYCLES      3
@@ -511,7 +511,7 @@ Serve para testar o carrinho sozinho nas etapas 2 e 3 da seção 14, **sem ESP-N
 | 8. Giro no lugar | 3 s | +60 | 0 | Esquerdo para frente, direito para trás |
 | 9. Zero | 2 s | 0 | 0 | Parada imediata |
 
-- O HC-SR04 e a máquina de estados funcionam normalmente: um obstáculo a 5 cm ou menos deve colocar o carrinho em OBSTACULO e bloquear os passos 2 e 6 (a ré do passo 4 e o giro do passo 8 continuam liberados).
+- O HC-SR04 e a máquina de estados funcionam normalmente: um obstáculo a 15 cm ou menos deve colocar o carrinho em OBSTACULO e bloquear os passos 2 e 6 (a ré do passo 4 e o giro do passo 8 continuam liberados).
 - Cada passo e cada transição de estado são logados (`EVT bench_step <n>`, `EVT state <de>-><para>`).
 - A telemetria é **só logada** na serial (não enviada).
 - Esse código existe **apenas** com `CONFIG_CAR_BENCH_MODE=y`; no build normal ele não é compilado.

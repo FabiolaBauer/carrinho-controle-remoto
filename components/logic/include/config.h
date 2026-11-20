@@ -42,8 +42,8 @@
 #define CONTROL_PERIOD_MS       10      /**< Período do laço de controle do carrinho (100 Hz) */
 #define SENSOR_PERIOD_MS        60      /**< Período de amostragem do HC-SR04 */
 #define SENSOR_ECHO_TIMEOUT_MS  30      /**< Timeout de espera do pulso de eco */
-#define OBSTACLE_ENTER_CM       5       /**< Limiar para entrar em ST_OBSTACULO (RF04) */
-#define OBSTACLE_EXIT_CM        10      /**< Limiar para sair de ST_OBSTACULO (histerese) */
+#define OBSTACLE_ENTER_CM       15      /**< Limiar para entrar em ST_OBSTACULO (RF04) */
+#define OBSTACLE_EXIT_CM        20      /**< Limiar para sair de ST_OBSTACULO (histerese) */
 #define SENSOR_VALID_MIN_CM     2       /**< Leitura mínima válida do HC-SR04 */
 #define SENSOR_VALID_MAX_CM     400     /**< Leitura máxima válida do HC-SR04 */
 #define SENSOR_FAIL_CYCLES      3       /**< Ciclos sem eco/inválidos para declarar sensor com defeito */

@@ -69,7 +69,7 @@ void car_sm_step(car_sm_t *sm, const car_inputs_t *in, car_outputs_t *out)
             }
         }
 
-        /* Contagem de ciclos limpos (> 30 cm e válido) */
+        /* Contagem de ciclos limpos (> OBSTACLE_EXIT_CM e válido) */
         if (reading_valid && (in->distance_cm > OBSTACLE_EXIT_CM)) {
             sm->consecutive_clear_cnt++;
         } else {

@@ -192,7 +192,7 @@ Serve para testar o carrinho sem o controle.
 | 8 | 3 s | +60 | 0 | Esquerdo para frente, direito para trás |
 | 9 | 2 s | 0 | 0 | Parada imediata |
 
-- **Obstáculo:** um anteparo a 5 cm ou menos bloqueia os passos 2 e 6. A ré (passo 4) e o giro (passo 8) continuam liberados.
+- **Obstáculo:** um anteparo a 15 cm ou menos bloqueia os passos 2 e 6. A ré (passo 4) e o giro (passo 8) continuam liberados.
 - **Telemetria:** é só logada (`TELEM: estado=... dist=...cm bat=...mV rej=...`).
 
 ---
@@ -302,7 +302,7 @@ São 21 testes em `test_apps/logic_host/main/test_main.c`:
 - todas as transições da tabela 8.3;
 - controle reiniciado depois de perder o enlace (T1);
 - boot sem controle e Wi-Fi lento;
-- histerese 5/10 cm;
+- histerese 15/20 cm;
 - sensor inválido e recuperação;
 - validação da telemetria no controle;
 - padrão do LED do controle.
@@ -431,7 +431,7 @@ Nenhum destes testes foi executado ainda: dependem do hardware montado. Em todos
 | `PWM_MIN_PCT` | 60 | `config.h` (ajustar, seção 7) |
 | `MAX_PWM_PCT` | 100 | `config.h` (ajustar no T2) |
 | `BATT_DIV_RATIO_X1000` | 3000 (divisor 3:1) | `config.h` (medir o divisor real) |
-| `OBSTACLE_ENTER_CM` / `OBSTACLE_EXIT_CM` | 5 / 10 | `config.h` |
+| `OBSTACLE_ENTER_CM` / `OBSTACLE_EXIT_CM` | 15 / 20 | `config.h` |
 | `CONTROLLER_MAC` / `CAR_MAC` | MACs das placas usadas | `config_macs.h`, local (seção 5) |
 | `INVERT_*` | Todos `false` | `config.h` |
 | Canal Wi-Fi | 1 | `CHANNEL` |

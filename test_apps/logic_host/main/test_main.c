@@ -535,17 +535,17 @@ void test_state_machine(void)
     TEST_ASSERT_EQUAL(ST_PARADO, sm.state);
     TEST_ASSERT_TRUE(out.brake_immediate);
 
-    // Histerese de Obstáculo (5 cm / 10 cm)
+    // Histerese de Obstáculo (OBSTACLE_ENTER_CM / OBSTACLE_EXIT_CM)
     // Coloca em movimento
     in.cmd_x = 0;
     in.cmd_y = 50;
     car_sm_step(&sm, &in, &out);
     TEST_ASSERT_EQUAL(ST_OPERANDO, sm.state);
 
-    // Leitura válida de 25 cm -> entra em ST_OBSTACULO
+    // Leitura válida em OBSTACLE_ENTER_CM -> entra em ST_OBSTACULO
     in.has_sensor_data = true;
     in.echo_ok = true;
-    in.distance_cm = 25;
+    in.distance_cm = OBSTACLE_ENTER_CM;
     car_sm_step(&sm, &in, &out);
     TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
     TEST_ASSERT_TRUE(sm.obstacle);
@@ -571,23 +571,23 @@ void test_state_machine(void)
     TEST_ASSERT_EQUAL_INT8(-40, out.target_left);
     TEST_ASSERT_EQUAL_INT8(-40, out.target_right);
 
-    // Histerese: Leitura de 28 cm (> 25 cm mas <= 30 cm) -> permanece em obstáculo
+    // Histerese: leitura em OBSTACLE_EXIT_CM (> ENTER, mas não > EXIT) -> permanece em obstáculo
     in.has_sensor_data = true;
     in.echo_ok = true;
-    in.distance_cm = 28;
+    in.distance_cm = OBSTACLE_EXIT_CM;
     car_sm_step(&sm, &in, &out);
     TEST_ASSERT_TRUE(sm.obstacle);
 
-    // Leitura de 35 cm (ciclo 1 > 30 cm) -> ainda não sai (precisa de 3 leituras válidas)
-    in.distance_cm = 35;
+    // Leitura > OBSTACLE_EXIT_CM (ciclo 1) -> ainda não sai (precisa de 3 leituras válidas)
+    in.distance_cm = OBSTACLE_EXIT_CM + 5;
     car_sm_step(&sm, &in, &out);
     TEST_ASSERT_TRUE(sm.obstacle);
 
-    // Ciclo 2 > 30 cm
+    // Ciclo 2 > OBSTACLE_EXIT_CM
     car_sm_step(&sm, &in, &out);
     TEST_ASSERT_TRUE(sm.obstacle);
 
-    // Ciclo 3 > 30 cm -> obstáculo resolvido!
+    // Ciclo 3 > OBSTACLE_EXIT_CM -> obstáculo resolvido!
     car_sm_step(&sm, &in, &out);
     TEST_ASSERT_FALSE(sm.obstacle);
 
@@ -612,7 +612,7 @@ void test_state_machine(void)
 
     // Recuperação após 3 leituras válidas
     in.echo_ok = true;
-    in.distance_cm = 50;
+    in.distance_cm = OBSTACLE_EXIT_CM + 30;
     car_sm_step(&sm, &in, &out); // Válida 1
     TEST_ASSERT_FALSE(sm.sensor_valid);
     car_sm_step(&sm, &in, &out); // Válida 2
@@ -726,7 +726,7 @@ void test_sm_link_lost_from_any_state(void)
     TEST_ASSERT_EQUAL_INT8(0, out.target_right);
 
     sm_to_operando(&sm, &out, 0, 60);
-    in = in_sensor(10, true);
+    in = in_sensor(OBSTACLE_ENTER_CM, true);
     car_sm_step(&sm, &in, &out);
     TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
     memset(&in, 0, sizeof(in));
@@ -751,7 +751,7 @@ void test_sm_obstacle_from_parado_and_exit(void)
     car_sm_init(&sm);
     car_sm_set_ready(&sm);
 
-    car_inputs_t in = in_sensor(20, true);
+    car_inputs_t in = in_sensor(OBSTACLE_ENTER_CM, true);
     car_sm_step(&sm, &in, &out);
     TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
     TEST_ASSERT_TRUE(out.brake_immediate);
@@ -762,9 +762,9 @@ void test_sm_obstacle_from_parado_and_exit(void)
     TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
     TEST_ASSERT_EQUAL_INT8(-50, out.target_left);
 
-    // Obstáculo some (3 leituras > 30 cm) com o joystick ainda em ré: continua em OBSTACULO
+    // Obstáculo some (3 leituras > OBSTACLE_EXIT_CM) com o joystick ainda em ré: continua em OBSTACULO
     for (int i = 0; i < OBSTACLE_EXIT_CYCLES; i++) {
-        in = in_sensor(80, true);
+        in = in_sensor(OBSTACLE_EXIT_CM + 30, true);
         car_sm_step(&sm, &in, &out);
     }
     TEST_ASSERT_FALSE(sm.obstacle);
@@ -804,7 +804,7 @@ void test_sm_obstacle_turn_allowed(void)
     TEST_ASSERT_EQUAL_UINT16(rej + 1, sm.rejected_cmd_cnt);
 }
 
-/* Histerese 25/30 cm: 26 cm não entra; 25 entra; 30 não sai; > 30 x3 sai */
+/* Histerese: ENTER+1 não entra; ENTER entra; EXIT não sai; > EXIT x3 sai */
 void test_sm_obstacle_hysteresis_edges(void)
 {
     car_sm_t sm;
@@ -821,7 +821,7 @@ void test_sm_obstacle_hysteresis_edges(void)
     TEST_ASSERT_EQUAL(ST_OBSTACULO, sm.state);
 
     for (int i = 0; i < 5; i++) {
-        in = in_sensor(OBSTACLE_EXIT_CM, true);   // exatamente 30: não conta como livre
+        in = in_sensor(OBSTACLE_EXIT_CM, true);   // exatamente EXIT: não conta como livre
         car_sm_step(&sm, &in, &out);
     }
     TEST_ASSERT_TRUE(sm.obstacle);
